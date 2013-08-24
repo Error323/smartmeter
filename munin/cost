@@ -1,0 +1,28 @@
+#!/bin/bash
+
+case $1 in
+  config)
+  cat <<'EOM'
+graph_title Energy Cost
+graph_vlabel Euro/month
+graph_category smartmeter
+graph_info The price of energy usage per month in euros
+graph_args --base 1000 -l 0
+power.label Power cost 5 min avg
+gas.label Gas cost 5 min avg
+EOM
+  exit 0;;
+esac
+
+FILENAME=/home/pi/poweravg
+
+if [ ! -r $FILENAME ] 
+then
+echo "Error: Cannot read '$FILENAME'" >&2
+  exit 1
+fi
+
+echo -n "power.value "
+cut -d' ' -f3 < $FILENAME
+echo -n "gas.value "
+cut -d' ' -f4 < $FILENAME
