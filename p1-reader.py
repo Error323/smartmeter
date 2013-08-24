@@ -23,6 +23,8 @@ import os
 import serial
 import fileinput
 import argparse
+import time
+import signal
 
 """
 P1 Addresses (OBIS references) according to the dutch standard table definition
@@ -43,23 +45,14 @@ Day and night cost of power per kWh according to my energy company
 DAY_COST_KWH   = 0.23678
 NIGHT_COST_KWH = 0.21519
 GAS_COST_M3    = 0.63661
-POWER_COST_KWH = {1:NIGHT_COST_KWH, 2:DAY_COST_KWH}
 
-class P1Reader:
-  def __init__(self):
-    self.p1          = serial.Serial()
-    self.p1.baudrate = 9600
-    self.p1.bytesize = serial.SEVENBITS
-    self.p1.parity   = serial.PARITY_EVEN
-    self.p1.stopbits = serial.STOPBITS_ONE
-    self.p1.xonxoff  = 0
-    self.p1.rtscts   = 0
-    self.p1.timeout  = 20
-    self.p1.port     = "/dev/ttyUSB0"
+ENABLED=True
 
 class P1Parser:
-  def __init__(self, filename='energyavg.dat'):
-    self.filename = filename
+  def __init__(self, args):
+    self.filename = args.output
+    self.kwh_price = {1:args.kwh1, 2:args.kwh2}
+    self.gas_price = args.gas
     self.reset()
 
   def value(self, msg, key):
@@ -78,13 +71,13 @@ class P1Parser:
     val = self.value(msg, TOTAL_GAS_USED)
     if (val[0]):
       self.gas += float(val[1])
-      self.gas_cost += self.gas * GAS_COST_M3
+      self.gas_cost += self.gas * self.gas_price
 
     val = self.value(msg, CURRENT_USED_KW)
     assert(val[0])
     curkw = float(val[1])
     self.kw += curkw
-    self.kwh_monthly_cost += (curkw/3600.0) * POWER_COST_KWH[self.tariff]
+    self.kwh_monthly_cost += (curkw/3600.0) * self.kwh_price[self.tariff]
     self.counter += 1
     
   def store(self):
@@ -107,47 +100,94 @@ class P1Parser:
     self.gas_cost = 0.0
     self.counter = 0
 
-class Emulator:
-  def __init__(self, parser):
-    self.parser = parser
+class Reader:
+  def __init__(self, args, parser):
+    self.parser      = parser
+    self.p1          = serial.Serial()
+    self.p1.baudrate = 9600
+    self.p1.bytesize = serial.SEVENBITS
+    self.p1.parity   = serial.PARITY_EVEN
+    self.p1.stopbits = serial.STOPBITS_ONE
+    self.p1.xonxoff  = 0
+    self.p1.rtscts   = 0
+    self.p1.timeout  = 20
+    self.p1.port     = args.port
+    self.enabled     = True
 
-  def file(self, filename):
-    f = open(filename, 'r')
-    data = [line for line in f.readline()]
-    f.close()
-    i = 0
-    while (True):
-      started = False
-      msg = ""
-      for line in data[i:]:
-        i += 1
-        if (line[0] == '/'):
-          started = True
-        if (not started):
-          continue
-        msg += line
-        if (line[0] == '!'):
-          break
-
+  def fromFile(self, f):
+    msg = ""
+    started = False
+    for line in f:
+      if (line[0] == '/'):
+        started = True
       if (not started):
-        break
-      self.parser.parse(msg)
-
+        continue
+      msg += line
+      if (line[0] == '!'):
+        self.parser.parse(msg)
+        msg = ""
+        started = False
+    f.close()
     self.parser.store()
 
+  def fromP1(self):
+    try:
+      self.p1.open()
+    except:
+      sys.exit("Could not open serial port '%s'" % self.p1.port)
+
+    msg = line = ""
+    started = False
+    start_time = time.clock()
+    while (ENABLED):
+      try:
+        line = self.readline()
+      except:
+        sys.stderr.write("Could not read from device '%s'" % self.p1.name)
+        continue
+
+      if (line[0] == '/'):
+        started = True
+      if (not started):
+        continue
+      msg += line
+      if (line[0] == '!'):
+        self.parser.parse(msg)
+        msg = ""
+        started = False
+        cur_time = time.clock()
+        if (cur_time - start_time >= 5*60):
+          start_time = cur_time
+          self.parser.store()
+
+    try:
+      self.p1.close()
+    except:
+      sys.exit("Could not close device '%s'" % self.p1.name)
+
+def sighandler(signum, frame):
+  ENABLED=False
+  sys.exit("Trapped signal %d exit now" % (signum))
+
 if __name__ == "__main__":
+  signal.signal(signal.SIGTERM, sighandler)
+  signal.signal(signal.SIGINT, sighandler)
+
   argparser = argparse.ArgumentParser(description='Smart meter logger')
-  argparser.add_argument('--input', type=argparse.FileType('r'), 
-                         help='Read data from file, for testing')
-  argparser.add_argument('--output', type=argparse.FileType('w'),
-                         help='File to write output to')
+  argparser.add_argument('--input', type=argparse.FileType('r'), help='Read data from file, for testing')
+  argparser.add_argument('--output', default='energyavg.dat', help='File to write output to')
   argparser.add_argument('--verbose', action="store_true", help='Print debug info to screen')
-  argparser.add_argument('--kwh1', type=float, default=DAY_COST_KWH,
-                         help='Price of a kWh at day tariff')
-  argparser.add_argument('--kwh2', type=float, default=NIGHT_COST_KWH,
-                         help='Price of a kWh at night tariff')
-  argparser.add_argument('--gas', type=float, default=GAS_COST_M3,
-                         help='Price of a cubic meter of gas (m3)')
+  argparser.add_argument('--kwh1', type=float, default=NIGHT_COST_KWH, help='Price of a kWh at night tariff')
+  argparser.add_argument('--kwh2', type=float, default=DAY_COST_KWH, help='Price of a kWh at day tariff')
+  argparser.add_argument('--gas', type=float, default=GAS_COST_M3, help='Price of a cubic meter of gas (m3)')
+  argparser.add_argument('--port', default='/dev/ttyUSB0', help='Serial port to read from')
 
   args = argparser.parse_args()
-  print args
+
+  p1 = P1Parser(args)
+  reader = Reader(args, p1)
+  if (args.input):
+    reader.fromFile(args.input)
+  else:
+    reader.fromP1()
+    
