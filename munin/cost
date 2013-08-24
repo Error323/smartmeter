@@ -10,6 +10,7 @@ graph_info The price of energy usage per month in euros
 graph_args --base 1000 -l 0
 power.label Power cost 5 min avg
 gas.label Gas cost 5 min avg
+gas.type COUNTER
 EOM
   exit 0;;
 esac

@@ -28,6 +28,7 @@ of the following:
 
     A B C D
 
-where `A` is the current kw usage, `B` the accumulated gas used thusfar in m^3, `C`
-the cost of power per month and `D` the cost of the accumulated gas thusfar.
-This file is interpreted by munin which creates the graphs every 5 min.
+where `A` is the current kilowatt usage, `B` the accumulated gas used thusfar
+in m^3, `C` the cost of power per month and `D` the cost of the accumulated gas
+thusfar.  This file is interpreted by munin which creates the graphs every 5
+min.
