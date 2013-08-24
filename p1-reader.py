@@ -168,7 +168,7 @@ class Reader:
 
 def sighandler(signum, frame):
   ENABLED = False
-  sys.exit("Trapped signal %d exit now" % (signum))
+  sys.stderr.write("Trapped signal %d exit now" % (signum))
 
 if __name__ == "__main__":
   signal.signal(signal.SIGTERM, sighandler)
