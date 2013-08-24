@@ -46,7 +46,7 @@ DAY_COST_KWH   = 0.23678
 NIGHT_COST_KWH = 0.21519
 GAS_COST_M3    = 0.63661
 
-ENABLED=True
+ENABLED = True
 
 class P1Parser:
   def __init__(self, args):
@@ -140,6 +140,7 @@ class Reader:
     started = False
     start_time = time.clock()
     while (ENABLED):
+      time.sleep(1.0)
       try:
         line = self.readline()
       except:
@@ -166,7 +167,7 @@ class Reader:
       sys.exit("Could not close device '%s'" % self.p1.name)
 
 def sighandler(signum, frame):
-  ENABLED=False
+  ENABLED = False
   sys.exit("Trapped signal %d exit now" % (signum))
 
 if __name__ == "__main__":
