@@ -29,13 +29,13 @@ import signal
 """
 P1 Addresses (OBIS references) according to the dutch standard table definition
 """
+TOTAL_GAS_USED           = "0-1:24.2.1"
 TOTAL_KWH_USED_DAY       = "1-0:1.8.1"
 TOTAL_KWH_USED_NIGHT     = "1-0:1.8.2"
 TOTAL_KWH_RETURNED_DAY   = "1-0:2.8.1"
 TOTAL_KWH_RETURNED_NIGHT = "1-0:2.8.2"
 CURRENT_USED_KW          = "1-0:1.7.0"
 CURRENT_RETURNED_KW      = "1-0:2.7.0"
-TOTAL_GAS_USED           = "0-1:24.2.1"
 CURRENT_KWH_TARIFF       = "0-0:96.14.0"
 
 """
@@ -77,7 +77,7 @@ class P1Parser:
     assert(val[0])
     curkw = float(val[1])
     self.kw += curkw
-    self.kwh_monthly_cost += (curkw/3600.0) * self.kwh_price[self.tariff]
+    self.kwh_monthly_cost += curkw * self.kwh_price[self.tariff]
     self.counter += 1
     
   def store(self):
@@ -85,7 +85,7 @@ class P1Parser:
     self.gas /= self.counter
     self.kw /= self.counter
     self.kwh_monthly_cost /= self.counter
-    self.kwh_monthly_cost = (self.kwh_monthly_cost * 6.0 * 60.0 * 24.0 * 356.0) / 12.0
+    self.kwh_monthly_cost = (self.kwh_monthly_cost * 24.0 * 365.0) / 12.0
     self.gas_cost /= self.counter
     f = open(self.filename, 'w')
     f.write('%f %f %f %f\n' % (self.kw, self.gas, self.kwh_monthly_cost, self.gas_cost))
