@@ -6,24 +6,27 @@ case a Landys+Gir E350, but it should work for other types with this port. The
 device is connected via RJ11 -> USB to a Raspberry Pi.
 
 ### Usage ###
-usage: p1-reader.py [-h] [--input INPUT] [--output OUTPUT] [--verbose]
-                    [--kwh1 KWH1] [--kwh2 KWH2] [--gas GAS]
 
-Smart meter logger
-
-optional arguments:
-  -h, --help       show this help message and exit
-  --input INPUT    Read data from file, for testing
-  --output OUTPUT  File to write output to
-  --verbose        Print debug info to screen
-  --kwh1 KWH1      Price of a kWh at day tariff
-  --kwh2 KWH2      Price of a kWh at night tariff
-  --gas GAS        Price of a cubic meter of gas (m3)
+    usage: p1-reader.py [-h] [--input INPUT] [--output OUTPUT] [--verbose]
+                        [--kwh1 KWH1] [--kwh2 KWH2] [--gas GAS]
+    
+    Smart meter logger
+    
+    optional arguments:
+      -h, --help       show this help message and exit
+      --input INPUT    Read data from file, for testing
+      --output OUTPUT  File to write output to
+      --verbose        Print debug info to screen
+      --kwh1 KWH1      Price of a kWh at day tariff
+      --kwh2 KWH2      Price of a kWh at night tariff
+      --gas GAS        Price of a cubic meter of gas (m3)
 
 ### Program Output ###
 The program writes averaged data from the device to file every 5 min consisting
 of the following:
+
     A B C D
+
 where A is the current kw usage, B the accumulated gas used thusfar in m^3, C
 the cost of power per month and D the cost of the accumulated gas thusfar.
 This file is interpreted by munin which creates the graphs every 5 min.
