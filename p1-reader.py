@@ -68,7 +68,6 @@ class P1Parser:
     val = self.value(msg, TOTAL_GAS_USED)
     if (val[0]):
       self.gas += float(val[1])
-      self.gas_cost += self.gas * self.gas_price
 
     val = self.value(msg, CURRENT_USED_KW)
     curkw = float(val[1])
@@ -82,13 +81,13 @@ class P1Parser:
     self.kw /= self.counter
     self.kwh_monthly_cost /= self.counter
     self.kwh_monthly_cost = (self.kwh_monthly_cost * 24.0 * 365.0) / 12.0
-    self.gas_cost /= self.counter
+    self.gas_cost = self.gas * self.gas_price
     self.kw *= 1000.0
     f = open(self.filename, 'w')
     f.write('%f %f %f %f\n' % (self.kw, self.gas, self.kwh_monthly_cost, self.gas_cost))
     f.close()
     if (self.verbose):
-      print "Wrote to '%s' at %s:\n  %8.2f\tWatt\n  %8.2f\tCubic meter (m3)\n  %8.2f\t€ per/month on power\n  %8.2f\t€ total on gas\n" % (self.filename, str(datetime.datetime.now()), self.kw, self.gas, self.kwh_monthly_cost, self.gas_cost)
+      print "Wrote to '%s' at %s:\n  %8.3f\tWatt\n  %8.3f\tCubic meter (m3)\n  %8.3f\t€ per/month on power\n  %8.3f\t€ total on gas\n" % (self.filename, str(datetime.datetime.now()), self.kw, self.gas, self.kwh_monthly_cost, self.gas_cost)
     self.reset()
     
   def reset(self):
