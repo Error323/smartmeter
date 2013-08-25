@@ -14,7 +14,7 @@ EOM
   exit 0;;
 esac
 
-FILENAME=$(pwd)/../energyavg.dat
+FILENAME=/tmp/energy.dat
 
 if [ ! -r $FILENAME ] 
 then
