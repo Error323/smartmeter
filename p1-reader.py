@@ -173,8 +173,8 @@ if __name__ == "__main__":
 
   argparser = argparse.ArgumentParser(description='Smart meter logger')
   argparser.add_argument('--input', type=argparse.FileType('r'), help='Read data from file, for testing')
-  argparser.add_argument('--output', default='energyavg.dat', help='File to write output to')
-  argparser.add_argument('--verbose', action="store_true", help='Print debug info to screen')
+  argparser.add_argument('--output', default='/tmp/energy.dat', help='File to write output to')
+  argparser.add_argument('--verbose', action='store_true', help='Print debug info to screen')
   argparser.add_argument('--kwh1', type=float, default=LOW_COST_KWH, help='Price of a kWh at night tariff')
   argparser.add_argument('--kwh2', type=float, default=HIGH_COST_KWH, help='Price of a kWh at day tariff')
   argparser.add_argument('--gas', type=float, default=GAS_COST_M3, help='Price of a cubic meter of gas (m3)')
