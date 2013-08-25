@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# coding: latin-1
 
 # p1-reader command for dutch smart meters over port p1 (RJ11)
 # (C) 2013-08 Folkert Huizinga <folkerthuizinga@gmail.com>
@@ -75,7 +76,12 @@ class P1Parser:
     self.kwh_monthly_cost += curkw * self.kwh_price[self.tariff]
     self.counter += 1
     if (self.verbose):
-      print "%f %f %f %f - %s\n" % (self.kw, self.gas, self.kwh_monthly_cost, self.gas_cost, TARIFF[self.tariff])
+      print "%f kW, %f €p/month, %f m3, %f € - %s" % (
+        self.kw/self.counter, 
+        self.kwh_monthly_cost/self.counter, 
+        self.gas/self.counter, 
+        self.gas_cost/self.counter, 
+        TARIFF[self.tariff])
     
   def store(self):
     assert(self.counter > 0)
@@ -85,10 +91,10 @@ class P1Parser:
     self.kwh_monthly_cost = (self.kwh_monthly_cost * 24.0 * 365.0) / 12.0
     self.gas_cost /= self.counter
     f = open(self.filename, 'w')
-    f.write('%f %f %f %f\n' % (self.kw, self.gas, self.kwh_monthly_cost, self.gas_cost))
+    f.write('%f %f %f %f\n' % (self.kw*1000.0, self.gas, self.kwh_monthly_cost, self.gas_cost))
     f.close()
     if (self.verbose):
-      print "(%f %f %f %f) written to '%s' at %s\n" % (self.kw, self.gas, self.kwh_monthly_cost, self.gas_cost, self.filename, str(datetime.datetime.now()))
+      print "'%f %f %f %f' written to '%s' at %s" % (self.kw*1000.0, self.gas, self.kwh_monthly_cost, self.gas_cost, self.filename, str(datetime.datetime.now()))
     self.reset()
     
   def reset(self):
