@@ -46,7 +46,7 @@ High and low tariff cost of power per kWh according to my energy company
 HIGH_COST_KWH = 0.23678
 LOW_COST_KWH  = 0.21519
 GAS_COST_M3   = 0.63661
-TARIFF        = {1:"Low", 2:"High"}
+TARIFF        = {1:"L", 2:"H"}
 
 class P1Parser:
   def __init__(self, args):
@@ -87,7 +87,7 @@ class P1Parser:
     f.write('%f %f %f %f\n' % (self.kw, self.gas, self.kwh_monthly_cost, self.gas_cost))
     f.close()
     if (self.verbose):
-      print "Wrote to '%s' at %s:\n  %8.3f\tWatt\n  %8.3f\tCubic meter (m3)\n  %8.3f\t€ per/month on power\n  %8.3f\t€ total on gas\n" % (self.filename, str(datetime.datetime.now()), self.kw, self.gas, self.kwh_monthly_cost, self.gas_cost)
+      print "Wrote to '%s' at %s:\n  %8.3f\tWatt (%s)\n  %8.3f\tCubic meter (m3)\n  %8.3f\t€ per/month on power\n  %8.3f\t€ total on gas\n" % (self.filename, str(datetime.datetime.now()), self.kw, TARIFF[self.tariff], self.gas, self.kwh_monthly_cost, self.gas_cost)
     self.reset()
     
   def reset(self):
