@@ -75,13 +75,6 @@ class P1Parser:
     self.kw += curkw
     self.kwh_monthly_cost += curkw * self.kwh_price[self.tariff]
     self.counter += 1
-    if (self.verbose):
-      print "%f kW, %f €p/month, %f m3, %f € - %s" % (
-        self.kw/self.counter, 
-        self.kwh_monthly_cost/self.counter, 
-        self.gas/self.counter, 
-        self.gas_cost/self.counter, 
-        TARIFF[self.tariff])
     
   def store(self):
     assert(self.counter > 0)
@@ -90,11 +83,12 @@ class P1Parser:
     self.kwh_monthly_cost /= self.counter
     self.kwh_monthly_cost = (self.kwh_monthly_cost * 24.0 * 365.0) / 12.0
     self.gas_cost /= self.counter
+    self.kw *= 1000.0
     f = open(self.filename, 'w')
-    f.write('%f %f %f %f\n' % (self.kw*1000.0, self.gas, self.kwh_monthly_cost, self.gas_cost))
+    f.write('%f %f %f %f\n' % (self.kw, self.gas, self.kwh_monthly_cost, self.gas_cost))
     f.close()
     if (self.verbose):
-      print "'%f %f %f %f' written to '%s' at %s" % (self.kw*1000.0, self.gas, self.kwh_monthly_cost, self.gas_cost, self.filename, str(datetime.datetime.now()))
+      print "Wrote to '%s' at %s:\n  %8.2f\tWatt\n  %8.2f\tCubic meter (m3)\n  %8.2f\t€ per/month on power\n  %8.2f\t€ total on gas\n" % (self.filename, str(datetime.datetime.now()), self.kw, self.gas, self.kwh_monthly_cost, self.gas_cost)
     self.reset()
     
   def reset(self):
