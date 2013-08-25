@@ -29,22 +29,23 @@ import signal
 """
 P1 Addresses (OBIS references) according to the dutch standard table definition
 """
-TOTAL_GAS_USED           = "0-1:24.2.0"
-TOTAL_KWH_USED_DAY       = "1-0:1.8.1"
-TOTAL_KWH_USED_NIGHT     = "1-0:1.8.2"
-TOTAL_KWH_RETURNED_DAY   = "1-0:2.8.1"
-TOTAL_KWH_RETURNED_NIGHT = "1-0:2.8.2"
-CURRENT_USED_KW          = "1-0:1.7.0"
-CURRENT_RETURNED_KW      = "1-0:2.7.0"
-CURRENT_KWH_TARIFF       = "0-0:96.14.0"
+TOTAL_GAS_USED          = "0-1:24.2.0"
+TOTAL_KWH_USED_HIGH     = "1-0:1.8.1"
+TOTAL_KWH_USED_LOW      = "1-0:1.8.2"
+TOTAL_KWH_RETURNED_HIGH = "1-0:2.8.1"
+TOTAL_KWH_RETURNED_LOW  = "1-0:2.8.2"
+CURRENT_USED_KW         = "1-0:1.7.0"
+CURRENT_RETURNED_KW     = "1-0:2.7.0"
+CURRENT_KWH_TARIFF      = "0-0:96.14.0"
 
 """
-Day and night cost of power per kWh according to my energy company
+High and low tariff cost of power per kWh according to my energy company
 (energiedirect.nl) and gas cost per cubic meter. All in euros.
 """
-DAY_COST_KWH   = 0.23678
-NIGHT_COST_KWH = 0.21519
-GAS_COST_M3    = 0.63661
+HIGH_COST_KWH = 0.23678
+LOW_COST_KWH  = 0.21519
+GAS_COST_M3   = 0.63661
+TARIFF        = {1:"Low", 2:"High"}
 
 class P1Parser:
   def __init__(self, args):
@@ -74,7 +75,7 @@ class P1Parser:
     self.kwh_monthly_cost += curkw * self.kwh_price[self.tariff]
     self.counter += 1
     if (self.verbose):
-      print self.kw, self.kwh_monthly_cost, self.gas, self.gas_cost
+      print "%f %f %f %f - %s\n" % (self.kw, self.gas, self.kwh_monthly_cost, self.gas_cost, TARIFF[self.tariff])
     
   def store(self):
     assert(self.counter > 0)
@@ -86,9 +87,9 @@ class P1Parser:
     f = open(self.filename, 'w')
     f.write('%f %f %f %f\n' % (self.kw, self.gas, self.kwh_monthly_cost, self.gas_cost))
     f.close()
-    self.reset()
     if (self.verbose):
-      print "Written to file '%s' at %s\n" % (self.filename, str(datetime.datetime.now()))
+      print "(%f %f %f %f) written to '%s' at %s\n" % (self.kw, self.gas, self.kwh_monthly_cost, self.gas_cost, self.filename, str(datetime.datetime.now()))
+    self.reset()
     
   def reset(self):
     self.tariff = 0
@@ -175,8 +176,8 @@ if __name__ == "__main__":
   argparser.add_argument('--input', type=argparse.FileType('r'), help='Read data from file, for testing')
   argparser.add_argument('--output', default='energyavg.dat', help='File to write output to')
   argparser.add_argument('--verbose', action="store_true", help='Print debug info to screen')
-  argparser.add_argument('--kwh1', type=float, default=NIGHT_COST_KWH, help='Price of a kWh at night tariff')
-  argparser.add_argument('--kwh2', type=float, default=DAY_COST_KWH, help='Price of a kWh at day tariff')
+  argparser.add_argument('--kwh1', type=float, default=LOW_COST_KWH, help='Price of a kWh at night tariff')
+  argparser.add_argument('--kwh2', type=float, default=HIGH_COST_KWH, help='Price of a kWh at day tariff')
   argparser.add_argument('--gas', type=float, default=GAS_COST_M3, help='Price of a cubic meter of gas (m3)')
   argparser.add_argument('--port', default='/dev/ttyUSB0', help='Serial port to read from')
 
