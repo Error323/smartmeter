@@ -23,13 +23,13 @@ import os
 import serial
 import fileinput
 import argparse
-import time
+import time, datetime
 import signal
 
 """
 P1 Addresses (OBIS references) according to the dutch standard table definition
 """
-TOTAL_GAS_USED           = "0-1:24.2.1"
+TOTAL_GAS_USED           = "0-1:24.2.0"
 TOTAL_KWH_USED_DAY       = "1-0:1.8.1"
 TOTAL_KWH_USED_NIGHT     = "1-0:1.8.2"
 TOTAL_KWH_RETURNED_DAY   = "1-0:2.8.1"
@@ -46,13 +46,12 @@ DAY_COST_KWH   = 0.23678
 NIGHT_COST_KWH = 0.21519
 GAS_COST_M3    = 0.63661
 
-ENABLED = True
-
 class P1Parser:
   def __init__(self, args):
     self.filename = args.output
     self.kwh_price = {1:args.kwh1, 2:args.kwh2}
     self.gas_price = args.gas
+    self.verbose = args.verbose
     self.reset()
 
   def value(self, msg, key):
@@ -61,11 +60,7 @@ class P1Parser:
     return (begin > 0, match.group())
 
   def parse(self, msg):
-    assert(msg[0] == '/')
-    assert(msg[-2] == '!')
-
     val = self.value(msg, CURRENT_KWH_TARIFF)
-    assert(val[0])
     self.tariff = int(val[1])
 
     val = self.value(msg, TOTAL_GAS_USED)
@@ -74,11 +69,12 @@ class P1Parser:
       self.gas_cost += self.gas * self.gas_price
 
     val = self.value(msg, CURRENT_USED_KW)
-    assert(val[0])
     curkw = float(val[1])
     self.kw += curkw
     self.kwh_monthly_cost += curkw * self.kwh_price[self.tariff]
     self.counter += 1
+    if (self.verbose):
+      print self.kw, self.kwh_monthly_cost, self.gas, self.gas_cost
     
   def store(self):
     assert(self.counter > 0)
@@ -91,6 +87,8 @@ class P1Parser:
     f.write('%f %f %f %f\n' % (self.kw, self.gas, self.kwh_monthly_cost, self.gas_cost))
     f.close()
     self.reset()
+    if (self.verbose):
+      print "Written to file '%s' at %s\n" % (self.filename, str(datetime.datetime.now()))
     
   def reset(self):
     self.tariff = 0
@@ -112,7 +110,6 @@ class Reader:
     self.p1.rtscts   = 0
     self.p1.timeout  = 20
     self.p1.port     = args.port
-    self.enabled     = True
 
   def fromFile(self, f):
     msg = ""
@@ -134,18 +131,17 @@ class Reader:
     try:
       self.p1.open()
     except:
-      sys.exit("Could not open serial port '%s'" % self.p1.port)
+      sys.exit("Could not open serial port '%s'\n" % self.p1.port)
 
     msg = line = ""
     started = False
-    start_time = time.clock()
-    while (ENABLED):
-      time.sleep(1.0)
+    start_time = time.time()
+    while (True):
       try:
-        line = self.readline()
+        line = self.p1.readline()
       except:
-        sys.stderr.write("Could not read from device '%s'" % self.p1.name)
-        continue
+        sys.stderr.write("Could not read from device '%s'\n" % self.p1.name)
+        break
 
       if (line[0] == '/'):
         started = True
@@ -156,10 +152,12 @@ class Reader:
         self.parser.parse(msg)
         msg = ""
         started = False
-        cur_time = time.clock()
-        if (cur_time - start_time >= 5*60):
+        cur_time = time.time()
+        if (cur_time - start_time >= 300.0):
           start_time = cur_time
           self.parser.store()
+      time.sleep(0.001)
+      sys.stdout.flush()
 
     try:
       self.p1.close()
@@ -167,8 +165,7 @@ class Reader:
       sys.exit("Could not close device '%s'" % self.p1.name)
 
 def sighandler(signum, frame):
-  ENABLED = False
-  sys.stderr.write("Trapped signal %d exit now" % (signum))
+  sys.exit("Trapped signal '%d' exit now" % (signum))
 
 if __name__ == "__main__":
   signal.signal(signal.SIGTERM, sighandler)

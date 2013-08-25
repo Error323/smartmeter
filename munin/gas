@@ -14,7 +14,7 @@ EOM
   exit 0;;
 esac
 
-FILENAME=/home/pi/smartmeter/energyavg
+FILENAME=$(pwd)/../energyavg.dat
 
 if [ ! -r $FILENAME ] 
 then

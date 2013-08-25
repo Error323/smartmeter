@@ -15,7 +15,7 @@ EOM
   exit 0;;
 esac
 
-FILENAME=/home/pi/poweravg
+FILENAME=$(pwd)/../energyavg.dat
 
 if [ ! -r $FILENAME ] 
 then
