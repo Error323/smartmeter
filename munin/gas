@@ -8,10 +8,7 @@ graph_vlabel Gas in m3
 graph_category smartmeter
 graph_info The gas usage in m3
 graph_args --base 1000 -l 0
-graph_period hour
-gas.label hourly average
-gas.cdef gas,1000,/
-gas.type COUNTER
+gas.label 5 min avg
 EOM
   exit 0;;
 esac

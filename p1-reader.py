@@ -31,6 +31,7 @@ import signal
 P1 Addresses (OBIS references) according to the dutch standard table definition
 """
 TOTAL_GAS_USED          = "0-1:24.2.0"
+TIME_GAS_UPDATE         = "0-1:24.3.0"
 TOTAL_KWH_USED_HIGH     = "1-0:1.8.1"
 TOTAL_KWH_USED_LOW      = "1-0:1.8.2"
 TOTAL_KWH_RETURNED_HIGH = "1-0:2.8.1"
@@ -54,11 +55,17 @@ class P1Parser:
     self.kwh_price = {1:args.kwh1, 2:args.kwh2}
     self.gas_price = args.gas
     self.verbose = args.verbose
+    self.gas_prev = 0.0
+    self.gas_cur = 0.0
+    self.gas = 0.0
+    self.gas_monthly_cost = 0.0
+    self.gas_time = None
+    self.gas_time_prev = None
     self.reset()
 
   def value(self, msg, key):
     begin = msg.find(key)
-    match = re.search("[0-9]*\.[0-9]*|0[0-9]*", msg[begin + len(key):])
+    match = re.search("\d{12}|[0-9]*\.[0-9]*|000[0-9]*", msg[begin + len(key):])
     return (begin > 0, match.group())
 
   def parse(self, msg):
@@ -66,9 +73,20 @@ class P1Parser:
     self.tariff = int(val[1])
 
     val = self.value(msg, TOTAL_GAS_USED)
-    if (val[0]):
-      self.gas += float(val[1])
-
+    time = self.value(msg, TIME_GAS_UPDATE)
+    if (val[0] and time[0]):
+      self.gas_cur = float(val[1])
+      self.gas_time = datetime.datetime.strptime(time[1], "%y%m%d%H%M%S")
+      if (self.gas_time_prev != None and self.gas_time != None):
+        delta_time = (self.gas_time - self.gas_time_prev).total_seconds()
+        if (delta_time > 0):
+          self.gas = (self.gas_cur - self.gas_prev) / (delta_time/300.0)
+          self.gas_monthly_cost = self.gas * self.gas_price * 730.0
+          self.gas_prev = self.gas_cur
+          if (self.verbose):
+            print "Gas update at %s\n  %8.3f Cubic meter (m3)\n  %8.3f € per month on gas\n" % (str(datetime.datetime.strptime(time[1], "%y%m%d%H%M%S")), self.gas, self.gas_monthly_cost)
+      self.gas_time_prev = self.gas_time
+      
     val = self.value(msg, CURRENT_USED_KW)
     curkw = float(val[1])
     self.kw += curkw
@@ -77,25 +95,21 @@ class P1Parser:
     
   def store(self):
     assert(self.counter > 0)
-    self.gas /= self.counter
     self.kw /= self.counter
     self.kwh_monthly_cost /= self.counter
-    self.kwh_monthly_cost = (self.kwh_monthly_cost * 24.0 * 365.0) / 12.0
-    self.gas_cost = self.gas * self.gas_price
+    self.kwh_monthly_cost *= 730.0 # (24 * 365) / 12
     self.kw *= 1000.0
     f = open(self.filename, 'w')
-    f.write('%f %d %f %d\n' % (self.kw, round(self.gas*1000), self.kwh_monthly_cost, round(self.gas_cost*100)))
+    f.write('%f %f %f %f\n' % (self.kw, self.gas, self.kwh_monthly_cost, self.gas_monthly_cost))
     f.close()
     if (self.verbose):
-      print "Wrote to '%s' at %s:\n  %8.3f\tWatt (%s)\n  %8.3f\tCubic meter (m3)\n  %8.3f\t€ per/month on power\n  %8.3f\t€ total on gas\n" % (self.filename, str(datetime.datetime.now()), self.kw, TARIFF[self.tariff], self.gas, self.kwh_monthly_cost, self.gas_cost)
+      print "Wrote to '%s' at %s\n  %8.3f\tWatt (%s)\n  %8.3f\tCubic meter (m3)\n  %8.3f\t€ per month on power\n  %8.3f\t€ per month on gas\n" % (self.filename, str(datetime.datetime.now()), self.kw, TARIFF[self.tariff], self.gas, self.kwh_monthly_cost, self.gas_monthly_cost)
     self.reset()
     
   def reset(self):
     self.tariff = 0
     self.kw = 0.0
-    self.gas = 0.0
     self.kwh_monthly_cost = 0.0
-    self.gas_cost = 0.0
     self.counter = 0
 
 class Reader:
