@@ -7,20 +7,21 @@ device is connected via RJ11 -> USB to a Raspberry Pi.
 
 ### Usage ###
 
-    usage: p1-reader.py [-h] [--input INPUT] [--output OUTPUT] [--verbose]
-                        [--kwh1 KWH1] [--kwh2 KWH2] [--gas GAS] [--port PORT]
-    
-    Smart meter logger
-    
+    usage: p1-reader.py [-h] [--input INPUT] [--output OUTPUT] [--kwh1 KWH1]
+                        [--kwh2 KWH2] [--gas GAS] [--port PORT]
+                        [--logfile LOGFILE] [--loglvl LOGLVL]
+
     optional arguments:
-      -h, --help       show this help message and exit
-      --input INPUT    Read data from file, for testing
-      --output OUTPUT  File to write output to
-      --verbose        Print debug info to screen
-      --kwh1 KWH1      Price of a kWh at night tariff
-      --kwh2 KWH2      Price of a kWh at day tariff
-      --gas GAS        Price of a cubic meter of gas (m3)
-      --port PORT      Serial port to read from
+      -h, --help         show this help message and exit
+      --input INPUT      Read data from file, for testing
+      --output OUTPUT    File to write output to
+      --kwh1 KWH1        Price of a kWh at low tariff
+      --kwh2 KWH2        Price of a kWh at high tariff
+      --gas GAS          Price of a cubic meter of gas (m3)
+      --port PORT        Serial port to read from
+      --logfile LOGFILE  File to log output to
+      --loglvl LOGLVL    Set the loglevel in {DEBUG, INFO, WARNING, ERROR,
+                         CRITICAL}
 
 ### Program Output ###
 The program writes averaged data from the device to file `/tmp/energy.dat`
@@ -28,6 +29,6 @@ every 5 min consisting of the following:
 
     A B C D
 
-where `A` is the current power usage in Watt, `B` the current gas usage in m^3,
+where `A` is the current power usage in Watt, `B` the current gas usage in m3,
 `C` the cost of power per month and `D` the cost of gas per month.  This file
 is interpreted by munin, see `munin/` for the plugins.
