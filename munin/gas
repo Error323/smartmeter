@@ -4,11 +4,12 @@ case $1 in
   config)
   cat <<'EOM'
 graph_title Gas Usage
-graph_vlabel Gas in m^3 
+graph_vlabel Gas in m3 
 graph_category smartmeter
-graph_info The gas usage in m^3
+graph_info The gas usage in m3
 graph_args --base 1000 -l 0
 gas.label 5 min average
+gas.cdef gas,1000,/
 gas.type COUNTER
 EOM
   exit 0;;

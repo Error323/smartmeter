@@ -84,7 +84,7 @@ class P1Parser:
     self.gas_cost = self.gas * self.gas_price
     self.kw *= 1000.0
     f = open(self.filename, 'w')
-    f.write('%f %f %f %f\n' % (self.kw, self.gas, self.kwh_monthly_cost, self.gas_cost))
+    f.write('%f %d %f %d\n' % (self.kw, round(self.gas*1000), self.kwh_monthly_cost, round(self.gas_cost*100)))
     f.close()
     if (self.verbose):
       print "Wrote to '%s' at %s:\n  %8.3f\tWatt (%s)\n  %8.3f\tCubic meter (m3)\n  %8.3f\t€ per/month on power\n  %8.3f\t€ total on gas\n" % (self.filename, str(datetime.datetime.now()), self.kw, TARIFF[self.tariff], self.gas, self.kwh_monthly_cost, self.gas_cost)

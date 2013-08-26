@@ -12,6 +12,7 @@ power.label Power cost 5 min avg
 gas.label Gas cost 5 min avg
 gas.type COUNTER
 gas.cdef gas,730,*
+gas.cdef gas,100,/
 EOM
   exit 0;;
 esac
