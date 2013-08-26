@@ -91,8 +91,7 @@ class P1Parser:
             self.gas = (self.gas_cur - self.gas_prev) / (delta_time/300.0)
             self.gas_monthly_cost = self.gas * self.gas_price * 730.0
             logging.info("\nGas update at %s\n  %8.3f m3 gas\n  %8.3f € per month on gas\n" \
-            % (str(self.gas_time), self.gas,
-            self.gas_monthly_cost))
+            % (str(self.gas_time), self.gas, self.gas_monthly_cost))
 
       self.gas_prev = self.gas_cur
       self.gas_time_prev = self.gas_time
@@ -114,9 +113,8 @@ class P1Parser:
     f.write('%f %f %f %f\n' % (self.kw, self.gas, self.kwh_monthly_cost,
                                self.gas_monthly_cost))
     f.close()
-    logging.info("\nWrote to '%s'\n  %8.3f\tWatt (%s)\n  %8.3f\tm3 gas\n  %8.3f\t€ per month on power\n  %8.3f\t€ per month on gas\n" \
-    % (self.filename, self.kw, TARIFF[self.tariff], self.gas,
-    self.kwh_monthly_cost, self.gas_monthly_cost)) 
+    logging.info("\nWrote to '%s'\n  %8.3f Watt (%s)\n  %8.3f m3 gas\n  %8.3f € per month on power\n  %8.3f € per month on gas\n" \
+    % (self.filename, self.kw, TARIFF[self.tariff], self.gas, self.kwh_monthly_cost, self.gas_monthly_cost)) 
     self.reset()
     
   def reset(self):
@@ -186,7 +184,6 @@ class Reader:
           start_time = cur_time
           self.parser.store()
       time.sleep(0.001)
-      sys.stdout.flush()
 
     try:
       self.p1.close()
