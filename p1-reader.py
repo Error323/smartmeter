@@ -84,7 +84,7 @@ class P1Parser:
           self.gas_monthly_cost = self.gas * self.gas_price * 730.0
           self.gas_prev = self.gas_cur
           if (self.verbose):
-            print "Gas update at %s\n  %8.3f Cubic meter (m3)\n  %8.3f € per month on gas\n" % (str(datetime.datetime.strptime(time[1], "%y%m%d%H%M%S")), self.gas, self.gas_monthly_cost)
+            print "Gas update at %s\n  %8.3f Cubic meter (m3)\n  %8.3f € per month on gas\n" % (str(self.gas_time), self.gas, self.gas_monthly_cost)
       self.gas_time_prev = self.gas_time
       
     val = self.value(msg, CURRENT_USED_KW)
