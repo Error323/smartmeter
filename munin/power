@@ -6,7 +6,7 @@ case $1 in
 graph_title Power Usage
 graph_vlabel Watt
 graph_category smartmeter
-graph_info The power usage in Watt every 10 seconds
+graph_info The power usage in Watt
 graph_args --base 1000 -l 0
 power.line 540:ffae00:average
 power.label 5 min avg
