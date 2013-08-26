@@ -23,12 +23,11 @@ device is connected via RJ11 -> USB to a Raspberry Pi.
       --port PORT      Serial port to read from
 
 ### Program Output ###
-The program writes averaged data from the device to file every 5 min consisting
-of the following:
+The program writes averaged data from the device to file `/tmp/energy.dat`
+every 5 min consisting of the following:
 
     A B C D
 
-where `A` is the current kilowatt usage, `B` the accumulated gas used thusfar
-in m^3, `C` the cost of power per month and `D` the cost of the accumulated gas
-thusfar.  This file is interpreted by munin which creates the graphs every 5
-min.
+where `A` is the current power usage in Watt, `B` the current gas usage in m^3,
+`C` the cost of power per month and `D` the cost of gas per month.  This file
+is interpreted by munin, see `munin/` for the plugins.
