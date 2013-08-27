@@ -8,6 +8,7 @@ graph_vlabel Euro/month
 graph_category smartmeter
 graph_info The price of energy usage per month in euros
 graph_args --base 1000 -l 0
+graph_scale no
 power.label Power
 gas.label Gas
 total.label Total
