@@ -71,7 +71,11 @@ class P1Parser:
   def parse(self, msg):
     # 1. Obtain kWh tariff
     val = self.value(msg, CURRENT_KWH_TARIFF)
-    self.tariff = int(val[1])
+    if (val[0]):
+      self.tariff = int(val[1])
+    else:
+      logging.warning("Could not obtain kWh tariff")
+
 
     # 2. Compute gas usage and monthly cost
     #
@@ -95,13 +99,18 @@ class P1Parser:
 
       self.gas_prev = self.gas_cur
       self.gas_time_prev = self.gas_time
+    else:
+      logging.warning("Could not obtain gas value")
       
     # 3. Compute kW usage and monthly cost
     val = self.value(msg, CURRENT_USED_KW)
-    curkw = float(val[1])
-    self.kw += curkw
-    self.kwh_monthly_cost += curkw * self.kwh_price[self.tariff]
-    self.counter += 1
+    if (val[0]):
+      curkw = float(val[1])
+      self.kw += curkw
+      self.kwh_monthly_cost += curkw * self.kwh_price[self.tariff]
+      self.counter += 1
+    else:
+      logging.warning("Could not obtain kWh value")
     
   def store(self):
     assert(self.counter > 0)
