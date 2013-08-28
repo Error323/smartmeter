@@ -6,13 +6,13 @@ device is connected via RJ11 -> USB to a Raspberry Pi.
 
 ### Usage ###
 
-    usage: p1-reader.py [-h] [--input INPUT] [--output OUTPUT] [--kwh1 KWH1]
-                        [--kwh2 KWH2] [--gas GAS] [--port PORT]
-                        [--logfile LOGFILE] [--loglvl LOGLVL]
-
+    usage: smartmeter.py [-h] [--data DATA] [--output OUTPUT] [--kwh1 KWH1]
+                         [--kwh2 KWH2] [--gas GAS] [--port PORT]
+                         [--logfile LOGFILE] [--loglvl LOGLVL]
+    
     optional arguments:
       -h, --help         show this help message and exit
-      --input INPUT      Read data from file, for testing
+      --data DATA        Read data from file, for testing
       --output OUTPUT    File to write output to
       --kwh1 KWH1        Price of a kWh at low tariff
       --kwh2 KWH2        Price of a kWh at high tariff
@@ -29,8 +29,8 @@ every 5 min consisting of the following:
     A B C D E
 
 where `A` is the current power usage in Watt, `B` is the current power returned
-in Watt, `C` the current gas usage in m3, `C` the cost of power per month and
-`D` the cost of gas per month.  This file is interpreted by munin, see `munin/`
+in Watt, `C` the current gas usage in m3, `D` the cost of power per month and
+`E` the cost of gas per month.  This file is interpreted by munin, see `munin/`
 for the plugins.
 
 ### Hardware ###
