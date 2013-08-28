@@ -22,4 +22,4 @@ echo "Error: Cannot read '$FILENAME'" >&2
 fi
 
 echo -n "gas.value "
-cut -d' ' -f2 < $FILENAME
+cut -d' ' -f3 < $FILENAME

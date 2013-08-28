@@ -70,9 +70,9 @@ class P1Parser:
 
   def parse(self, msg):
     # 1. Obtain kWh tariff
-    val = self.value(msg, CURRENT_KWH_TARIFF)
-    if (val[0]):
-      self.tariff = int(val[1])
+    tariff = self.value(msg, CURRENT_KWH_TARIFF)
+    if (tariff[0]):
+      self.tariff = int(tariff[1])
     else:
       logging.warning("Could not obtain kWh tariff")
 
@@ -81,17 +81,16 @@ class P1Parser:
     #
     # Since this is an integration value, we need to do some checks here before
     # we subtract the current gas value from the previous gas value.
-    val = self.value(msg, TOTAL_GAS_USED)
+    gas = self.value(msg, TOTAL_GAS_USED)
     time = self.value(msg, TIME_GAS_UPDATE)
-    if (val[0] and time[0]):
-      self.gas_cur = float(val[1])
+    if (gas[0] and time[0]):
+      self.gas_cur = float(gas[1])
       self.gas_time = datetime.datetime.strptime(time[1], "%y%m%d%H%M%S")
 
       if (self.gas_time_prev != None and self.gas_time != None):
         delta_time = (self.gas_time - self.gas_time_prev).total_seconds()
 
-        if (delta_time > 0):
-          if (self.gas_prev > -1.0):
+        if (delta_time > 0 and self.gas_prev > -1.0):
             self.gas = (self.gas_cur - self.gas_prev) / (delta_time/300.0)
             self.gas_monthly_cost = self.gas * self.gas_price * 730.0
             logging.info("\nGas update at %s\n  %8.3f m3 gas\n  %8.3f € per month on gas\n" \
@@ -100,35 +99,47 @@ class P1Parser:
       self.gas_prev = self.gas_cur
       self.gas_time_prev = self.gas_time
     else:
-      logging.warning("Could not obtain gas value")
+      logging.warning("Could not obtain gas usage")
       
     # 3. Compute kW usage and monthly cost
-    val = self.value(msg, CURRENT_USED_KW)
-    if (val[0]):
-      curkw = float(val[1])
-      self.kw += curkw
+    kw_in = self.value(msg, CURRENT_USED_KW)
+    if (kw_in[0]):
+      curkw = float(kw_in[1])
+      self.kw_in += curkw
       self.kwh_monthly_cost += curkw * self.kwh_price[self.tariff]
-      self.counter += 1
     else:
-      logging.warning("Could not obtain kWh value")
+      logging.warning("Could not obtain kWh input")
+
+    # 4. Compute kW returned and update monthly cost
+    kw_out = self.value(msg, CURRENT_RETURNED_KW)
+    if (kw_out[0]):
+      curkw = float(kw_out[1])
+      self.kw_out += curkw
+      self.kwh_monthly_cost -= curkw * self.kwh_price[self.tariff]
+    else:
+      logging.warning("Could not obtain kWh output")
+
+    self.counter += 1
     
   def store(self):
     assert(self.counter > 0)
-    self.kw /= self.counter
+    self.kw_in /= self.counter
+    self.kw_out /= self.counter
     self.kwh_monthly_cost /= self.counter
     self.kwh_monthly_cost *= 730.0 # (24 * 365) / 12
-    self.kw *= 1000.0
+    self.kw_in *= 1000.0
+    self.kw_out *= 1000.0
     f = open(self.filename, 'w')
-    f.write('%f %f %f %f\n' % (self.kw, self.gas, self.kwh_monthly_cost,
-                               self.gas_monthly_cost))
+    f.write('%f %f %f %f %f\n' % (self.kw_in, self.kw_out, self.gas, self.kwh_monthly_cost, self.gas_monthly_cost))
     f.close()
-    logging.info("\nWrote to '%s'\n  %8.3f Watt (%s)\n  %8.3f m3 gas\n  %8.3f € per month on power\n  %8.3f € per month on gas\n" \
-    % (self.filename, self.kw, TARIFF[self.tariff], self.gas, self.kwh_monthly_cost, self.gas_monthly_cost)) 
+    logging.info("\nWrote to '%s'\n  %8.3f Watt (%s) used\n  %8.3f Watt (%s) returned\n  %8.3f m3 gas\n  %8.3f € per month on power\n  %8.3f € per month on gas\n" \
+    % (self.filename, self.kw_in, TARIFF[self.tariff], self.kw_out, TARIFF[self.tariff], self.gas, self.kwh_monthly_cost, self.gas_monthly_cost)) 
     self.reset()
     
   def reset(self):
     self.tariff = 0
-    self.kw = 0.0
+    self.kw_in = 0.0
+    self.kw_out = 0.0
     self.kwh_monthly_cost = 0.0
     self.counter = 0
 

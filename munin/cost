@@ -24,8 +24,8 @@ echo "Error: Cannot read '$FILENAME'" >&2
   exit 1
 fi
 
-power=$(cut -d' ' -f3 < $FILENAME)
-gas=$(cut -d' ' -f4 < $FILENAME)
+power=$(cut -d' ' -f4 < $FILENAME)
+gas=$(cut -d' ' -f5 < $FILENAME)
 echo "power.value $power"
 echo "gas.value $gas"
 echo -n "total.value "
