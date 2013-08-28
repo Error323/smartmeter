@@ -20,17 +20,15 @@
 
 import re
 import sys
-import os
 import serial
-import fileinput
 import argparse
-import time, datetime
+import time
+import datetime
 import signal
 import logging, logging.handlers
 
-"""
-P1 Addresses (OBIS references) according to the dutch standard table definition
-"""
+# P1 Addresses (OBIS references) according to the dutch standard table
+# definition
 TOTAL_GAS_USED          = "0-1:24.2.0"
 TIME_GAS_UPDATE         = "0-1:24.3.0"
 TOTAL_KWH_USED_HIGH     = "1-0:1.8.1"
@@ -41,31 +39,34 @@ CURRENT_USED_KW         = "1-0:1.7.0"
 CURRENT_RETURNED_KW     = "1-0:2.7.0"
 CURRENT_KWH_TARIFF      = "0-0:96.14.0"
 
-"""
-High and low tariff cost of power per kWh according to my energy company
-(energiedirect.nl) and gas cost per cubic meter. All in euros.
-"""
+# High and low tariff cost of power per kWh according to my energy company
+# (energiedirect.nl) and gas cost per cubic meter. All in euros.
 HIGH_COST_KWH = 0.23678
 LOW_COST_KWH  = 0.21519
 GAS_COST_M3   = 0.63661
 TARIFF        = {1:"L", 2:"H"}
 
 class P1Parser:
-  def __init__(self, args):
-    self.filename = args.output
-    self.kwh_price = {1:args.kwh1, 2:args.kwh2}
-    self.gas_price = args.gas
+  def __init__(self, output, kwh1, kwh2, gas):
+    self.filename = output
+    self.tariff = 0
+    self.kw_in = 0.0
+    self.kw_out = 0.0
+    self.kwh_monthly_cost = 0.0
+    self.counter = 0
+    self.kwh_price = {1:kwh1, 2:kwh2}
+    self.gas_price = gas
     self.gas_prev = -1.0
     self.gas_cur = 0.0
     self.gas = 0.0
     self.gas_monthly_cost = 0.0
     self.gas_time = None
     self.gas_time_prev = None
-    self.reset()
 
   def value(self, msg, key):
     begin = msg.find(key)
-    match = re.search("\d{12}|[0-9]*\.[0-9]*|000[0-9]*", msg[begin + len(key):])
+    match = re.search(r"\d{12}|[0-9]*\.[0-9]*|000[0-9]*", 
+                      msg[begin + len(key):])
     return (begin > 0, match.group())
 
   def parse(self, msg):
@@ -82,19 +83,20 @@ class P1Parser:
     # Since this is an integration value, we need to do some checks here before
     # we subtract the current gas value from the previous gas value.
     gas = self.value(msg, TOTAL_GAS_USED)
-    time = self.value(msg, TIME_GAS_UPDATE)
-    if (gas[0] and time[0]):
+    update = self.value(msg, TIME_GAS_UPDATE)
+    if (gas[0] and update[0]):
       self.gas_cur = float(gas[1])
-      self.gas_time = datetime.datetime.strptime(time[1], "%y%m%d%H%M%S")
+      self.gas_time = datetime.datetime.strptime(update[1], "%y%m%d%H%M%S")
 
       if (self.gas_time_prev != None and self.gas_time != None):
         delta_time = (self.gas_time - self.gas_time_prev).total_seconds()
 
         if (delta_time > 0 and self.gas_prev > -1.0):
-            self.gas = (self.gas_cur - self.gas_prev) / (delta_time/300.0)
-            self.gas_monthly_cost = self.gas * self.gas_price * 730.0
-            logging.info("\nGas update at %s\n  %8.3f m3 gas\n  %8.3f € per month on gas\n" \
-            % (str(self.gas_time), self.gas, self.gas_monthly_cost))
+          self.gas = (self.gas_cur - self.gas_prev) / (delta_time/300.0)
+          self.gas_monthly_cost = self.gas * self.gas_price * 730.0
+          logging.info("\nGas update at %s\n  %8.3f m3 gas\n  %8.3f € per"
+                       "month on gas\n" % (str(self.gas_time), self.gas, 
+                       self.gas_monthly_cost))
 
       self.gas_prev = self.gas_cur
       self.gas_time_prev = self.gas_time
@@ -129,11 +131,16 @@ class P1Parser:
     self.kwh_monthly_cost *= 730.0 # (24 * 365) / 12
     self.kw_in *= 1000.0
     self.kw_out *= 1000.0
-    f = open(self.filename, 'w')
-    f.write('%f %f %f %f %f\n' % (self.kw_in, self.kw_out, self.gas, self.kwh_monthly_cost, self.gas_monthly_cost))
-    f.close()
-    logging.info("\nWrote to '%s'\n  %8.3f Watt (%s) used\n  %8.3f Watt (%s) returned\n  %8.3f m3 gas\n  %8.3f € per month on power\n  %8.3f € per month on gas\n" \
-    % (self.filename, self.kw_in, TARIFF[self.tariff], self.kw_out, TARIFF[self.tariff], self.gas, self.kwh_monthly_cost, self.gas_monthly_cost)) 
+    output = open(self.filename, 'w')
+    output.write('%f %f %f %f %f\n' % (self.kw_in, self.kw_out, self.gas,
+                                       self.kwh_monthly_cost,
+                                       self.gas_monthly_cost))
+    output.close()
+    logging.info("\nWrote to '%s'\n  %8.3f Watt (%s) used\n  %8.3f Watt (%s) "
+                 "returned\n  %8.3f m3 gas\n  %8.3f € per month on power\n  "
+                 "%8.3f € per month on gas\n" % (self.filename, self.kw_in,
+                 TARIFF[self.tariff], self.kw_out, TARIFF[self.tariff],
+                 self.gas, self.kwh_monthly_cost, self.gas_monthly_cost)) 
     self.reset()
     
   def reset(self):
@@ -144,22 +151,22 @@ class P1Parser:
     self.counter = 0
 
 class Reader:
-  def __init__(self, args, parser):
-    self.p1          = serial.Serial()
-    self.p1.baudrate = 9600
-    self.p1.bytesize = serial.SEVENBITS
-    self.p1.parity   = serial.PARITY_EVEN
-    self.p1.stopbits = serial.STOPBITS_ONE
-    self.p1.xonxoff  = 0
-    self.p1.rtscts   = 0
-    self.p1.timeout  = 20
-    self.p1.port     = args.port
-    self.parser      = parser
+  def __init__(self, port, parser):
+    self.device          = serial.Serial()
+    self.device.baudrate = 9600
+    self.device.bytesize = serial.SEVENBITS
+    self.device.parity   = serial.PARITY_EVEN
+    self.device.stopbits = serial.STOPBITS_ONE
+    self.device.xonxoff  = 0
+    self.device.rtscts   = 0
+    self.device.timeout  = 20
+    self.device.port     = port
+    self.parser          = parser
 
-  def fromFile(self, f):
+  def from_file(self, data):
     msg = ""
     started = False
-    for line in f:
+    for line in data:
       if (line[0] == '/'):
         started = True
       if (not started):
@@ -170,23 +177,23 @@ class Reader:
         self.parser.parse(msg)
         msg = ""
         started = False
-    f.close()
+    data.close()
     self.parser.store()
 
-  def fromP1(self):
+  def from_p1(self):
     try:
-      self.p1.open()
-    except:
-      sys.exit("Could not open serial port '%s'\n" % self.p1.port)
+      self.device.open()
+    except IOError:
+      sys.exit("Error: Could not open device '%s'" % self.device.name)
 
     msg = line = ""
     started = False
     start_time = time.time()
     while (True):
       try:
-        line = self.p1.readline()
-      except:
-        logging.critical("Could not read from device '%s'\n" % self.p1.name)
+        line = self.device.readline()
+      except IOError:
+        logging.critical("Could not read from device '%s'" % self.device.name)
         break
 
       if (line[0] == '/'):
@@ -206,9 +213,9 @@ class Reader:
       time.sleep(0.001)
 
     try:
-      self.p1.close()
-    except:
-      sys.exit("Could not close device '%s'" % self.p1.name)
+      self.device.close()
+    except IOError:
+      sys.exit("Error: Could not close device '%s'", self.device.name)
 
 def sighandler(signum, frame):
   logging.critical("Trapped signal '%d' exit now" % (signum))
@@ -218,43 +225,53 @@ if __name__ == "__main__":
   signal.signal(signal.SIGTERM, sighandler)
   signal.signal(signal.SIGINT, sighandler)
 
-  argparser = argparse.ArgumentParser(description='Smart meter logger')
-  argparser.add_argument('--input', type=argparse.FileType('r'), help='Read data from file, for testing')
-  argparser.add_argument('--output', default='/tmp/energy.dat', help='File to write output to')
-  argparser.add_argument('--kwh1', type=float, default=LOW_COST_KWH, help='Price of a kWh at low tariff')
-  argparser.add_argument('--kwh2', type=float, default=HIGH_COST_KWH, help='Price of a kWh at high tariff')
-  argparser.add_argument('--gas', type=float, default=GAS_COST_M3, help='Price of a cubic meter of gas (m3)')
-  argparser.add_argument('--port', default='/dev/ttyUSB0', help='Serial port to read from')
-  argparser.add_argument('--logfile', help='File to log output to')
-  argparser.add_argument('--loglvl', default='INFO', help='Set the loglevel in {DEBUG, INFO, WARNING, ERROR, CRITICAL}')
+  argparser = argparse.ArgumentParser(description=\
+    'A smart meter logger for the dutch smart meters with a P1 (RJ11) port.')
+  argparser.add_argument('--data', type=argparse.FileType('r'), 
+    help='Read data from file, for testing')
+  argparser.add_argument('--output', default='/tmp/energy.dat', 
+    help='File to write output to')
+  argparser.add_argument('--kwh1', type=float, default=LOW_COST_KWH, 
+    help='Price of a kWh at low tariff')
+  argparser.add_argument('--kwh2', type=float, default=HIGH_COST_KWH, 
+    help='Price of a kWh at high tariff')
+  argparser.add_argument('--gas', type=float, default=GAS_COST_M3, 
+    help='Price of a cubic meter of gas (m3)')
+  argparser.add_argument('--port', default='/dev/ttyUSB0', 
+    help='Serial port to read from')
+  argparser.add_argument('--logfile', 
+    help='File to log output to')
+  argparser.add_argument('--loglvl', default='INFO', 
+    help='Set the loglevel in {DEBUG, INFO, WARNING, ERROR, CRITICAL}')
 
-  args = argparser.parse_args()
+  cmd_args = argparser.parse_args()
 
   logger = logging.getLogger()
-  loglvl = getattr(logging, args.loglvl.upper(), None)
+  loglvl = getattr(logging, cmd_args.loglvl.upper(), None)
 
   if (not isinstance(loglvl, int)):
-    sys.exit('Invalid log level: %s' % args.loglvl)
+    sys.exit('Invalid log level: %s' % cmd_args.loglvl)
 
   logger.setLevel(loglvl)
   formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
-  if (args.logfile):
-    handler = logging.handlers.RotatingFileHandler(args.logfile, maxBytes=1048576, backupCount=10)
+  if (cmd_args.logfile):
+    handler = logging.handlers.RotatingFileHandler(cmd_args.logfile,
+    maxBytes=1048576, backupCount=10)
   else:
     handler = logging.StreamHandler()
   handler.setFormatter(formatter)
   logger.addHandler(handler)
-  logger.info("Output file at '%s'" % (args.output))
-  logger.info("Price for kWh %f € at low tariff" % (args.kwh1))
-  logger.info("Price for kWh %f € at high tariff" % (args.kwh2))
-  logger.info("Price for gas %f €" % (args.gas))
+  logger.info("Output file at '%s'" % (cmd_args.output))
+  logger.info("Price for kWh %f € at low tariff" % (cmd_args.kwh1))
+  logger.info("Price for kWh %f € at high tariff" % (cmd_args.kwh2))
+  logger.info("Price for gas %f €" % (cmd_args.gas))
 
-  p1 = P1Parser(args)
-  reader = Reader(args, p1)
-  if (args.input):
-    logger.info("Reading data from '%s'" % (args.input.name))
-    reader.fromFile(args.input)
+  p1 = P1Parser(cmd_args.output, cmd_args.kwh1, cmd_args.kwh2, cmd_args.gas)
+  reader = Reader(cmd_args.port, p1)
+  if (cmd_args.data):
+    logger.info("Reading data from '%s'" % (cmd_args.data.name))
+    reader.from_file(cmd_args.data)
   else:
-    logger.info("Reading data from '%s'" % (args.port))
-    reader.fromP1()
+    logger.info("Reading data from '%s'" % (cmd_args.port))
+    reader.from_p1()
     
