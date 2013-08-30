@@ -65,8 +65,7 @@ class P1Parser:
 
   def value(self, msg, key):
     begin = msg.find(key)
-    match = re.search(r"\d{12}|[0-9]*\.[0-9]*|000[0-9]*", 
-                      msg[begin + len(key):])
+    match = re.search(r"\d{12}|\d*\.\d*|000[0-2]", msg[begin + len(key):])
     return (begin > 0, match.group())
 
   def parse(self, msg):
