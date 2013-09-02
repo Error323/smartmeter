@@ -30,7 +30,7 @@ every 5 min consisting of the following:
 
 where `A` is the current power usage in Watt, `B` is the current power returned
 in Watt, `C` the current gas usage in m3, `D` the cost of power per month and
-`E` the cost of gas per month.  This file is interpreted by munin, see `munin/`
+`E` the cost of gas per month. This file is interpreted by munin, see `munin/`
 for the plugins.
 
 ### Hardware ###

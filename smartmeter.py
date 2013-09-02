@@ -49,7 +49,6 @@ TARIFF        = {1:"L", 2:"H"}
 class P1Parser:
   def __init__(self, output, kwh1, kwh2, gas):
     self.filename = output
-    self.tariff = 0
     self.kw_in = 0.0
     self.kw_out = 0.0
     self.kwh_monthly_cost = 0.0
@@ -71,11 +70,11 @@ class P1Parser:
   def parse(self, msg):
     # 1. Obtain kWh tariff
     tariff = self.value(msg, CURRENT_KWH_TARIFF)
+    t = 0
     if (tariff[0]):
-      self.tariff = int(tariff[1])
+      t = int(tariff[1])
     else:
       logging.warning("Could not obtain kWh tariff")
-
 
     # 2. Compute gas usage and monthly cost
     #
@@ -91,11 +90,10 @@ class P1Parser:
         delta_time = (self.gas_time - self.gas_time_prev).total_seconds()
 
         if (delta_time > 0 and self.gas_prev > -1.0):
-          self.gas = (self.gas_cur - self.gas_prev) / (delta_time/300.0)
-          self.gas_monthly_cost = self.gas * self.gas_price * 730.0
-          logging.info("\nGas update at %s\n  %8.3f m3 gas\n  %8.3f € per"
-                       "month on gas\n" % (str(self.gas_time), self.gas, 
-                       self.gas_monthly_cost))
+          self.gas = (self.gas_cur - self.gas_prev) / (delta_time/300.0) # Usage per 5 min
+          self.gas_monthly_cost = self.gas * self.gas_price * 730.0 # (24 * 365) / 12
+          logging.info("g %f %f %s" % (self.gas, self.gas_monthly_cost,
+                                         str(self.gas_time)))
 
       self.gas_prev = self.gas_cur
       self.gas_time_prev = self.gas_time
@@ -107,7 +105,7 @@ class P1Parser:
     if (kw_in[0]):
       curkw = float(kw_in[1])
       self.kw_in += curkw
-      self.kwh_monthly_cost += curkw * self.kwh_price[self.tariff]
+      self.kwh_monthly_cost += curkw * self.kwh_price[t]
     else:
       logging.warning("Could not obtain kWh input")
 
@@ -116,11 +114,12 @@ class P1Parser:
     if (kw_out[0]):
       curkw = float(kw_out[1])
       self.kw_out += curkw
-      self.kwh_monthly_cost -= curkw * self.kwh_price[self.tariff]
+      self.kwh_monthly_cost -= curkw * self.kwh_price[t]
     else:
       logging.warning("Could not obtain kWh output")
 
     self.counter += 1
+    logging.info("r %s %s %s %s" % (kw_in[1], kw_out[1], gas[1], TARIFF[t]))
     
   def store(self):
     assert(self.counter > 0)
@@ -128,22 +127,17 @@ class P1Parser:
     self.kw_out /= self.counter
     self.kwh_monthly_cost /= self.counter
     self.kwh_monthly_cost *= 730.0 # (24 * 365) / 12
-    self.kw_in *= 1000.0
-    self.kw_out *= 1000.0
+    self.kw_in *= 1000.0 # to Watt
+    self.kw_out *= 1000.0 # to Watt
     output = open(self.filename, 'w')
     output.write('%f %f %f %f %f\n' % (self.kw_in, self.kw_out, self.gas,
                                        self.kwh_monthly_cost,
                                        self.gas_monthly_cost))
     output.close()
-    logging.info("\nWrote to '%s'\n  %8.3f Watt (%s) used\n  %8.3f Watt (%s) "
-                 "returned\n  %8.3f m3 gas\n  %8.3f € per month on power\n  "
-                 "%8.3f € per month on gas\n" % (self.filename, self.kw_in,
-                 TARIFF[self.tariff], self.kw_out, TARIFF[self.tariff],
-                 self.gas, self.kwh_monthly_cost, self.gas_monthly_cost)) 
-    self.reset()
-    
-  def reset(self):
-    self.tariff = 0
+    logging.info("w %f %f %f %f %f" % (self.kw_in, self.kw_out, self.gas,
+                                       self.kwh_monthly_cost,
+                                       self.gas_monthly_cost)) 
+
     self.kw_in = 0.0
     self.kw_out = 0.0
     self.kwh_monthly_cost = 0.0
@@ -261,9 +255,10 @@ if __name__ == "__main__":
   handler.setFormatter(formatter)
   logger.addHandler(handler)
   logger.info("Output file at '%s'" % (cmd_args.output))
-  logger.info("Price for kWh %f € at low tariff" % (cmd_args.kwh1))
-  logger.info("Price for kWh %f € at high tariff" % (cmd_args.kwh2))
-  logger.info("Price for gas %f €" % (cmd_args.gas))
+  logger.info("Price for kWh € %f at low tariff" % (cmd_args.kwh1))
+  logger.info("Price for kWh € %f at high tariff" % (cmd_args.kwh2))
+  logger.info("Price for gas € %f" % (cmd_args.gas))
+  logger.info("r = read, w = write, g = gas")
 
   p1 = P1Parser(cmd_args.output, cmd_args.kwh1, cmd_args.kwh2, cmd_args.gas)
   reader = Reader(cmd_args.port, p1)
