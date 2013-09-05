@@ -46,6 +46,9 @@ LOW_COST_KWH  = 0.21519
 GAS_COST_M3   = 0.63661
 TARIFF        = {1:"L", 2:"H"}
 
+# Update interval in seconds (300 = 5 minutes)
+INTERVAL = 300.0
+
 class P1Parser:
   def __init__(self, output, kwh1, kwh2, gas):
     self.filename = output
@@ -90,7 +93,7 @@ class P1Parser:
         delta_time = (self.gas_time - self.gas_time_prev).total_seconds()
 
         if (delta_time > 0 and self.gas_prev > -1.0):
-          self.gas = (self.gas_cur - self.gas_prev) / (delta_time/300.0) # Usage per 5 min
+          self.gas = (self.gas_cur - self.gas_prev) / (delta_time/INTERVAL)
           self.gas_monthly_cost = self.gas * self.gas_price * 730.0 # (24 * 365) / 12
           logging.info("g %f %f %s" % (self.gas, self.gas_monthly_cost,
                                          str(self.gas_time)))
@@ -200,7 +203,7 @@ class Reader:
         msg = ""
         started = False
         cur_time = time.time()
-        if (cur_time - start_time >= 300.0):
+        if (cur_time - start_time >= INTERVAL):
           start_time = cur_time
           self.parser.store()
       time.sleep(0.001)
