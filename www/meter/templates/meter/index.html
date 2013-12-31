@@ -1,0 +1,78 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+  <head>
+    <title>
+      Chart
+    </title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <script src="http://code.jquery.com/jquery-1.9.1.js" type="text/javascript"></script>
+    <script src="http://code.highcharts.com/highcharts.js" type="text/javascript"></script>
+    <script type="text/javascript">
+        $(function() {
+            $('#container').highcharts({
+                chart: {
+                    zoomType: 'x'
+                },
+                title: {
+                    text: 'Gas & Power Usage',
+                    x: -20 //center
+                },
+                subtitle: {
+                    text: 'Smartmeter',
+                    x: -20
+                },
+                xAxis: {
+                    type: 'datetime'
+                },
+                yAxis: [{
+                    labels: {
+                        format: '{value} W'
+                    },
+                    title: {
+                        text: 'Power'
+                    }
+                }, {
+                    labels: {
+                        format: '{value} m\u00B3'
+                    },
+                    title: {
+                        text: 'Gas'
+                    },
+                    opposite: true
+                }],
+                tooltip: {
+                    shared: true
+                },
+                legend: {
+                    layout: 'vertical',
+                    align: 'right',
+                    verticalAlign: 'middle',
+                    borderWidth: 0
+                },
+                series: [{
+                    type: 'column',
+                    name: 'Gas',
+                    yAxis: 1,
+                    pointInterval: {{data.gasinterval}},
+                    pointStart: {{data.gasstart}},
+                    data: {{data.gasdata}},
+                    tooltip: {
+                        valueSuffix: ' m\u00B3'
+                    }
+                }, {
+                    name: 'Power',
+                    pointInterval: {{data.powerinterval}},
+                    pointStart: {{data.powerstart}},
+                    data: {{data.powerdata}},
+                    tooltip: {
+                        valueSuffix: ' Watt'
+                    }
+                }]
+            });
+        });
+    </script>
+  </head>
+  <body>
+    <div id="container" style="min-width: 800px; height: 400px; margin: 0 auto"></div>
+  </body>
+</html>
