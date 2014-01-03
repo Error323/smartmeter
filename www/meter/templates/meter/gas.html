@@ -1,0 +1,110 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+  <head>
+    <title>
+    Power Usage RPi
+    </title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <script src="http://code.jquery.com/jquery-1.9.1.js" type="text/javascript"></script>
+    <script src="http://code.highcharts.com/stock/highstock.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    $(function() {
+      $.getJSON('http://localhost:8000/meter/gas/data', function(data) {
+        console.log('num points: ' + data.length)
+        $('#container').highcharts('StockChart', {
+          chart: {
+            zoomType: 'x'
+          },
+
+          navigator: {
+            adaptToUpdatedData: false,
+            series: {
+              data: data
+            }
+          },
+
+          scrollbar: {
+            liveRedraw: false
+          },
+          
+          title: {
+            text: 'Gas Usage'
+          },
+          
+          subtitle: {
+            text: 'Landys+Gir E350 smartmeter - RPi powered'
+          },
+          
+          rangeSelector: {
+            buttons: [{
+              type: 'hour',
+              count: 1,
+              text: '1h'
+            }, {
+              type: 'day',
+              count: 1,
+              text: '1d'
+            }, {
+              type: 'month',
+              count: 1,
+              text: '1m'
+            }, {
+              type: 'year',
+              count: 1,
+              text: '1y'
+            }, {
+              type: 'all',
+              text: 'All'
+            }],
+            inputEnabled: false, // it supports only days
+            selected: 4 // all
+          },
+          
+          xAxis: {
+            events: {
+              afterSetExtremes: afterSetExtremes
+            },
+            minRange: 12 * 3600 * 1000 // one hour
+          },
+
+          yAxis: {
+            title: {
+              text: 'Gas'
+            }
+          },
+
+          series: [{
+            name: 'Gas',
+            step: true,
+            data: data,
+            tooltip: {
+              valueSuffix: ' mm\u00B3'
+            }
+          }]
+        });
+      });
+    });
+
+
+    /**
+     * Load new data depending on the selected min and max
+     */
+    function afterSetExtremes(e) {
+      var url,
+      currentExtremes = this.getExtremes(),
+      range = e.max - e.min;
+      var chart = $('#container').highcharts();
+      chart.showLoading('Loading data from server...');
+      $.getJSON('http://localhost:8000/meter/gas/data/'
+        +Math.round(e.min)+'/'+Math.round(e.max), 
+        function(data) {
+          console.log('num points: ' + data.length);
+          chart.series[0].setData(data);
+          chart.hideLoading(); });
+    }
+    </script>
+  </head>
+  <body>
+    <div id="container" style="min-width: 800px; height: 400px; margin: 0 auto"></div>
+  </body>
+</html>

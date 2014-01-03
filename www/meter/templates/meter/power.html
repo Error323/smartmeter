@@ -10,6 +10,7 @@
     <script type="text/javascript">
     $(function() {
       $.getJSON('http://localhost:8000/meter/power/data', function(data) {
+        console.log('num points: ' + data.length)
         $('#container').highcharts('StockChart', {
           chart: {
             zoomType: 'x'
@@ -105,6 +106,7 @@
       $.getJSON('http://localhost:8000/meter/power/data/'
         +Math.round(e.min)+'/'+Math.round(e.max), 
         function(data) {
+          console.log('num points: ' + data.length);
           chart.series[0].setData(data);
           chart.hideLoading(); });
     }
