@@ -8,7 +8,7 @@ import rrdtool
 import json
 import os
 
-def index(request, name):
+def index(request, name='index'):
   return render(request, 'meter/' + name + '.html')
 
 def power(request, name, start=0, end=0):
@@ -21,6 +21,12 @@ def gas(request, name, start=0, end=0):
 
 def cost(request, name, start=0, end=0):
   data = []
+  return HttpResponse(json.dumps(data))
+
+def realtime(request):
+  power = float(rrdtool.info(RRDPWR)['ds[usage].last_ds'])
+  gas = float(rrdtool.info(RRDGAS)['ds[gas].last_ds'])
+  data = {'power': power, 'gas': gas}
   return HttpResponse(json.dumps(data))
 
 def rrddata(name, start, end, dec=3):
