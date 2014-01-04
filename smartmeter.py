@@ -54,6 +54,7 @@ class P1Parser:
     self.kwh_price = {1:kwh1, 2:kwh2}
     self.gas_price = gas
     self.gas_prev = None
+    self.gas_time_prev = None
 
   def value(self, msg, key):
     begin = msg.find(key)
@@ -71,13 +72,21 @@ class P1Parser:
 
     # 2. Update gas usage and cost
     gas = self.value(msg, TOTAL_GAS_USED)
-    if (gas[0]):
-      if (self.gas_prev != None):
-        gas_diff = float(gas[1]) - self.gas_prev
-        if (gas_diff > 1e-6):
+    update = self.value(msg, TIME_GAS_UPDATE)
+    if (gas[0] and update[0]):
+      gas_cur = float(gas[1])
+      gas_time = datetime.datetime.strptime(update[1], "%y%m%d%H%M%S")
+
+      if (self.gas_time_prev != None):
+        delta_time = (gas_time - self.gas_time_prev).total_seconds()
+
+        if (delta_time > 0):
+          gas_diff = (gas_cur - self.gas_prev)
           rrdtool.update(RRDGAS, '%s:%f' % (str(time), gas_diff))
           rrdtool.update(RRDGASCOST, '%s:%f' % (str(time), (gas_diff * self.gas_price)))
-      self.gas_prev = float(gas[1])
+
+      self.gas_prev = gas_cur
+      self.gas_time_prev = gas_time
     else:
       logging.warning("Could not obtain gas usage")
       
@@ -86,8 +95,8 @@ class P1Parser:
     kw_out = self.value(msg, CURRENT_RETURNED_KW)
     if (kw_in[0] and kw_out[0]):
       rrdtool.update(RRDPWR, '%s:%d:%d' % (str(time), 
-        int(round(float(kw_in[1])*1000)),
-        int(round(float(kw_out[1])*1000))))
+        round(float(kw_in[1])*1000),
+        round(float(kw_out[1])*1000)))
       kw_cost = (float(kw_in[1]) - float(kw_out[1])) * self.kwh_price[t]
       rrdtool.update(RRDPWRCOST, '%s:%f' % (str(time), kw_cost))
     else:

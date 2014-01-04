@@ -56,11 +56,11 @@ if __name__ == "__main__":
   print '\nCreating gas rrd-databases at:\n %s\n %s' % (RRDGAS, RRDGASCOST)
   rrdtool.create(RRDGAS, 
                  '-s', str(updateinterval), 
-                 'DS:gas:GAUGE:3600:0:U', 
+                 'DS:gas:GAUGE:5400:0:U', 
                  rra(total))
   rrdtool.create(RRDGASCOST, 
                  '-s', str(updateinterval), 
-                 'DS:cost:GAUGE:3600:0:U', 
+                 'DS:cost:GAUGE:5400:0:U', 
                  rra(total))
 
   if cmd_args.fill:
