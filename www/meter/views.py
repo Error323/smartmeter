@@ -12,7 +12,7 @@ def index(request, name):
   return render(request, 'meter/' + name + '.html')
 
 def power(request, name, start=0, end=0):
-  data = rrddata(RRDPWR, start, end)
+  data = rrddata(RRDPWR, start, end, 0)
   return HttpResponse(json.dumps(data))
 
 def gas(request, name, start=0, end=0):
@@ -23,7 +23,7 @@ def cost(request, name, start=0, end=0):
   data = []
   return HttpResponse(json.dumps(data))
 
-def rrddata(name, start, end):
+def rrddata(name, start, end, dec=3):
   if start == 0 or end == 0:
     end = rrdtool.last(name)
     start = rrdtool.first(name)
@@ -44,6 +44,6 @@ def rrddata(name, start, end):
     if raw[2][i][0] == None:
       data.append((time*1000, None))
     else:
-      data.append((time*1000, raw[2][i][0]))
+      data.append((time*1000, round(raw[2][i][0], dec)))
       
   return data

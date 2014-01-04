@@ -9,7 +9,7 @@
     <script src="http://code.highcharts.com/stock/highstock.js" type="text/javascript"></script>
     <script type="text/javascript">
     $(function() {
-      $.getJSON('http://localhost:8000/meter/power/data', function(data) {
+      $.getJSON('data/', function(data) {
         console.log('num points: ' + data.length)
         $('#container').highcharts('StockChart', {
           chart: {
@@ -103,7 +103,7 @@
       range = e.max - e.min;
       var chart = $('#container').highcharts();
       chart.showLoading('Loading data from server...');
-      $.getJSON('http://localhost:8000/meter/power/data/'
+      $.getJSON('data/'
         +Math.round(e.min)+'/'+Math.round(e.max), 
         function(data) {
           console.log('num points: ' + data.length);
