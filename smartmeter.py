@@ -28,11 +28,7 @@ import datetime
 import signal
 import logging, logging.handlers
 import rrdtool
-
-# RRD database files
-RRDPWR = os.path.abspath('data/power.rrd')
-RRDGAS = os.path.abspath('data/gas.rrd')
-RRDCST = os.path.abspath('data/cost.rrd')
+from createdb import *
 
 # P1 Addresses (OBIS references) according to the dutch standard table
 # definition
@@ -73,33 +69,29 @@ class P1Parser:
     else:
       logging.warning("Could not obtain kWh tariff")
 
-    # 2. Update gas usage and monthly cost
-    #
-    # Since this is an integration value, we need to do some checks here before
-    # we subtract the current gas value from the previous gas value.
+    # 2. Update gas usage and cost
     gas = self.value(msg, TOTAL_GAS_USED)
     if (gas[0]):
-      rrdtool.update(RRDGAS, '%s:%d' % (str(time), int(float(gas[1])*1000)))
+      if (self.gas_prev != None):
+        gas_diff = float(gas[1]) - self.gas_prev
+        if (gas_diff > 1e-6):
+          rrdtool.update(RRDGAS, '%s:%f' % (str(time), gas_diff))
+          rrdtool.update(RRDGASCOST, '%s:%f' % (str(time), (gas_diff * self.gas_price)))
+      self.gas_prev = float(gas[1])
     else:
       logging.warning("Could not obtain gas usage")
-    logging.debug(time)
       
-    # 3. Update kW I/O
+    # 3. Update kW I/O and cost
     kw_in = self.value(msg, CURRENT_USED_KW)
     kw_out = self.value(msg, CURRENT_RETURNED_KW)
     if (kw_in[0] and kw_out[0]):
       rrdtool.update(RRDPWR, '%s:%d:%d' % (str(time), 
-        int(float(kw_in[1])*1000),
-        int(float(kw_out[1])*1000)))
+        int(round(float(kw_in[1])*1000)),
+        int(round(float(kw_out[1])*1000))))
+      kw_cost = (float(kw_in[1]) - float(kw_out[1])) * self.kwh_price[t]
+      rrdtool.update(RRDPWRCOST, '%s:%f' % (str(time), kw_cost))
     else:
       logging.warning("Could not obtain kWh")
-
-    # 4. Update cost
-    if (self.gas_prev != None):
-      gas_cost = (float(gas[1]) - self.gas_prev) * self.gas_price
-      kw_cost = (float(kw_in[1]) - float(kw_out[1])) * self.kwh_price[t]
-      rrdtool.update(RRDCST, '%s:%f:%f' % (str(time), kw_cost, gas_cost))
-    self.gas_prev = float(gas[1])
 
     logging.info("r %s %s %s %s" % (kw_in[1], kw_out[1], gas[1], TARIFF[t]))
     
@@ -130,7 +122,7 @@ class Reader:
         self.parser.parse(msg, t)
         msg = ""
         started = False
-        t += 300
+        t += 10
     data.close()
 
   def from_p1(self):

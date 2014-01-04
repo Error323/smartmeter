@@ -1,14 +1,12 @@
+import sys
+sys.path.append('.') # add root path
 from django.http import HttpResponse
 from django.shortcuts import render
+from createdb import *
 
 import rrdtool
 import json
 import os
-
-RRDPWR = os.path.abspath('data/power.rrd')
-RRDGAS = os.path.abspath('data/gas.rrd')
-RRDCST = os.path.abspath('data/cost.rrd')
-POINTS = 1000
 
 def index(request, name):
   return render(request, 'meter/' + name + '.html')
@@ -22,7 +20,7 @@ def gas(request, name, start=0, end=0):
   return HttpResponse(json.dumps(data))
 
 def cost(request, name, start=0, end=0):
-  data = rrddata(RRDCST, start, end)
+  data = []
   return HttpResponse(json.dumps(data))
 
 def rrddata(name, start, end):
@@ -46,6 +44,6 @@ def rrddata(name, start, end):
     if raw[2][i][0] == None:
       data.append((time*1000, None))
     else:
-      data.append((time*1000, int(round(raw[2][i][0]))))
+      data.append((time*1000, raw[2][i][0]))
       
   return data

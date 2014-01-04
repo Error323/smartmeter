@@ -6,18 +6,24 @@ import random
 import rrdtool
 import argparse
 
-MINROWS = 1000
+# RRD database files
+RRDPWR = os.path.abspath('data/power.rrd')
+RRDGAS = os.path.abspath('data/gas.rrd')
+RRDPWRCOST = os.path.abspath('data/power-cost.rrd')
+RRDGASCOST = os.path.abspath('data/gas-cost.rrd')
+
+POINTS = 1000
 TOTAL   = 60 * 60 * 24 * 365 * 3 # Three yrs in seconds
 
-def rra(total):
+def rra(total, rtype='AVERAGE'):
   rras = []
   i = 0
   rows = total
 
-  while rows > MINROWS:
+  while rows > POINTS:
     step = 2**i
     rows = total / step
-    rras.append('RRA:AVERAGE:0.5:%d:%d' % (step, rows))
+    rras.append('RRA:%s:0.5:%d:%d' % (rtype, step, rows))
     print '%2d %5d %10d' % (i,step,rows)
     i += 1
   
@@ -33,33 +39,29 @@ if __name__ == "__main__":
   # create power db
   updateinterval = 10
   total = TOTAL / updateinterval
-  print '\nCreating power db at %s' % (path + 'power.rrd')
-  rrdtool.create(path + 'power.rrd', 
+  print '\nCreating power rrd-databases at:\n %s\n %s' % (RRDPWR, RRDPWRCOST)
+  rrdtool.create(RRDPWR, 
                  '-s', str(updateinterval), 
-                 'DS:Usage:GAUGE:3600:0:U', 
-                 'DS:Return:GAUGE:3600:0:U', 
+                 'DS:usage:GAUGE:3600:0:U', 
+                 'DS:return:GAUGE:3600:0:U', 
+                 rra(total))
+  rrdtool.create(RRDPWRCOST, 
+                 '-s', str(updateinterval), 
+                 'DS:cost:GAUGE:3600:0:U', 
                  rra(total))
 
   # create gas db
   updateinterval = 60*60
   total = TOTAL / updateinterval
-  print '\nCreating gas db at %s' % (path + 'gas.rrd')
-  rrdtool.create(path + 'gas.rrd', 
+  print '\nCreating gas rrd-databases at:\n %s\n %s' % (RRDGAS, RRDGASCOST)
+  rrdtool.create(RRDGAS, 
                  '-s', str(updateinterval), 
-                 'DS:gas:COUNTER:3600:0:U', 
+                 'DS:gas:GAUGE:3600:0:U', 
                  rra(total))
-
-  # create cost db
-  updateinterval = 60*60*24
-  total = TOTAL / updateinterval
-  print '\nCreating cost db at %s' % (path + 'cost.rrd')
-  rrdtool.create(path + 'cost.rrd', 
+  rrdtool.create(RRDGASCOST, 
                  '-s', str(updateinterval), 
-                 'DS:power:GAUGE:3600:0:U', 
-                 'DS:gas:GAUGE:3600:0:U',
-                 'RRA:AVERAGE:0.5:86400:1095',
-                 'RRA:AVERAGE:0.5:2628000:36',
-                 'RRA:AVERAGE:0.5:31536000:3')
+                 'DS:cost:GAUGE:3600:0:U', 
+                 rra(total))
 
   if cmd_args.fill:
     print '\nFilling databases with random data'
@@ -71,10 +73,11 @@ if __name__ == "__main__":
       t += step
 
     t = start
-    step = 3600
+    step = 3600/4
     counter = 0
     for i in range(0, TOTAL, step):
-      counter += random.randint(1, i+1)
+      if step % 1800 == 0:
+        counter += 1
       rrdtool.update(path + 'gas.rrd', '%d:%d' % (t, counter))
       t += step
 
