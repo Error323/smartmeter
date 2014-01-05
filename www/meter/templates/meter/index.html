@@ -115,7 +115,9 @@
         setInterval(function() {
           $.getJSON('realtime/', function(data) {
             var power = chart.series[0].points[0];
-            var gas   = chart.series[1].points[0];
+            var gas = chart.series[1].points[0];
+            data.power = Math.min(data.power, 3200);
+            data.gas = Math.min(data.gas, 1.7);
             power.update(data.power, false);
             gas.update(data.gas, false);
             chart.redraw();
@@ -126,6 +128,6 @@
     </script>
   </head>
   <body>
-    <div id="container" style="width: 600px; height: 300px; margin: 0 auto"></div>
+    <div id="container" style="width: 800px; height: 400px; margin: 0 auto"></div>
   </body>
 </html>
