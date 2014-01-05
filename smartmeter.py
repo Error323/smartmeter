@@ -94,9 +94,8 @@ class P1Parser:
     kw_in = self.value(msg, CURRENT_USED_KW)
     kw_out = self.value(msg, CURRENT_RETURNED_KW)
     if (kw_in[0] and kw_out[0]):
-      rrdtool.update(RRDPWR, '%s:%d:%d' % (str(time), 
-        round(float(kw_in[1])*1000),
-        round(float(kw_out[1])*1000)))
+      rrdtool.update(RRDPWR, '%s:%f:%f' % (str(time), 
+        float(kw_in[1])*1000.0), float(kw_out[1])*1000.0)))
       kw_cost = (float(kw_in[1]) - float(kw_out[1])) * self.kwh_price[t]
       rrdtool.update(RRDPWRCOST, '%s:%f' % (str(time), kw_cost))
     else:
