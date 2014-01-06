@@ -6,14 +6,16 @@ device is connected via RJ11 -> USB to a Raspberry Pi.
 
 ### Usage ###
 
-    usage: smartmeter.py [-h] [--data DATA] [--output OUTPUT] [--kwh1 KWH1]
-                         [--kwh2 KWH2] [--gas GAS] [--port PORT]
-                         [--logfile LOGFILE] [--loglvl LOGLVL]
-    
+
+    usage: smartmeter.py [-h] [--data DATA] [--kwh1 KWH1] [--kwh2 KWH2]
+                         [--gas GAS] [--port PORT] [--logfile LOGFILE]
+                         [--loglvl LOGLVL]
+
+    A smart meter logger for the dutch smart meters with a P1 (RJ11) port.
+
     optional arguments:
       -h, --help         show this help message and exit
       --data DATA        Read data from file, for testing
-      --output OUTPUT    File to write output to
       --kwh1 KWH1        Price of a kWh at low tariff
       --kwh2 KWH2        Price of a kWh at high tariff
       --gas GAS          Price of a cubic meter of gas (m3)
@@ -23,15 +25,9 @@ device is connected via RJ11 -> USB to a Raspberry Pi.
                          CRITICAL}
 
 ### Program Output ###
-The program writes averaged data from the device to file `/tmp/energy.dat`
-every 5 min consisting of the following:
-
-    A B C D E
-
-where `A` is the current power usage in Watt, `B` is the current power returned
-in Watt, `C` the current gas usage in m3, `D` the cost of power per month and
-`E` the cost of gas per month. This file is interpreted by munin, see `munin/`
-for the plugins.
+The program writes all data to a round-robin database using rrdtool. In this
+case, every 10 seconds. This program requires the databases to exist, use
+`createdb.py` for that.
 
 ### Hardware ###
 As stated, the smart meters uses a RJ11 port (P1) which needs to be connected
