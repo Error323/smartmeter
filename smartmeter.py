@@ -25,6 +25,7 @@ import serial
 import argparse
 import time
 import datetime
+import calendar
 import signal
 import logging, logging.handlers
 import rrdtool
@@ -61,7 +62,7 @@ class P1Parser:
     match = re.search(r"\d{12}|\d*\.\d*|000[0-2]", msg[begin + len(key):])
     return (begin > 0, match.group())
 
-  def parse(self, msg, time='N'):
+  def parse(self, msg, time):
     # 1. Obtain kWh tariff
     tariff = self.value(msg, CURRENT_KWH_TARIFF)
     t = 0
@@ -74,10 +75,10 @@ class P1Parser:
     kw_in = self.value(msg, CURRENT_USED_KW)
     kw_out = self.value(msg, CURRENT_RETURNED_KW)
     if (kw_in[0] and kw_out[0]):
-      rrdtool.update(RRDPWR, '%s:%f:%f' % (str(time), 
+      rrdtool.update(RRDPWR, '%d:%f:%f' % (time, 
         float(kw_in[1])*1000.0, float(kw_out[1])*1000.0))
       kw_cost = (float(kw_in[1]) - float(kw_out[1])) * self.kwh_price[t]
-      rrdtool.update(RRDPWRCOST, '%s:%f' % (str(time), kw_cost))
+      rrdtool.update(RRDPWRCOST, '%d:%f' % (time, kw_cost))
     else:
       logging.warning("Could not obtain kWh")
 
@@ -92,13 +93,13 @@ class P1Parser:
         delta_time = (gas_time - self.gas_time_prev).total_seconds()
 
         if (delta_time > 0):
-          gas_diff = (gas_cur - self.gas_prev)
+          gas_diff = gas_cur - self.gas_prev
+          gas_cost = gas_diff * self.gas_price
 
-          if (time == 'N'):
-            time = calendar.timegm(gas_time)
-
+          time = calendar.timegm(gas_time.utctimetuple())
           rrdtool.update(RRDGAS, '%d:%f' % (time, gas_diff))
-          rrdtool.update(RRDGASCOST, '%d:%f' % (time, (gas_diff * self.gas_price)))
+          rrdtool.update(RRDGASCOST, '%d:%f' % (time, gas_cost))
+          logging.info("g %s %f %f" % (gas_time, gas_diff, gas_cost))
 
       self.gas_prev = gas_cur
       self.gas_time_prev = gas_time
@@ -159,7 +160,7 @@ class Reader:
       msg += line
       if (line[0] == '!'):
         logging.debug("\n" + msg)
-        self.parser.parse(msg)
+        self.parser.parse(msg, long(time.time()))
         msg = ""
         started = False
 
