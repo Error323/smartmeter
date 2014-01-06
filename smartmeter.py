@@ -70,7 +70,18 @@ class P1Parser:
     else:
       logging.warning("Could not obtain kWh tariff")
 
-    # 2. Update gas usage and cost
+    # 2. Update kW I/O and cost
+    kw_in = self.value(msg, CURRENT_USED_KW)
+    kw_out = self.value(msg, CURRENT_RETURNED_KW)
+    if (kw_in[0] and kw_out[0]):
+      rrdtool.update(RRDPWR, '%s:%f:%f' % (str(time), 
+        float(kw_in[1])*1000.0, float(kw_out[1])*1000.0))
+      kw_cost = (float(kw_in[1]) - float(kw_out[1])) * self.kwh_price[t]
+      rrdtool.update(RRDPWRCOST, '%s:%f' % (str(time), kw_cost))
+    else:
+      logging.warning("Could not obtain kWh")
+
+    # 3. Update gas usage and cost
     gas = self.value(msg, TOTAL_GAS_USED)
     update = self.value(msg, TIME_GAS_UPDATE)
     if (gas[0] and update[0]):
@@ -82,25 +93,18 @@ class P1Parser:
 
         if (delta_time > 0):
           gas_diff = (gas_cur - self.gas_prev)
-          rrdtool.update(RRDGAS, '%s:%f' % (str(time), gas_diff))
-          rrdtool.update(RRDGASCOST, '%s:%f' % (str(time), (gas_diff * self.gas_price)))
+
+          if (time == 'N'):
+            time = calendar.timegm(gas_time)
+
+          rrdtool.update(RRDGAS, '%d:%f' % (time, gas_diff))
+          rrdtool.update(RRDGASCOST, '%d:%f' % (time, (gas_diff * self.gas_price)))
 
       self.gas_prev = gas_cur
       self.gas_time_prev = gas_time
     else:
       logging.warning("Could not obtain gas usage")
       
-    # 3. Update kW I/O and cost
-    kw_in = self.value(msg, CURRENT_USED_KW)
-    kw_out = self.value(msg, CURRENT_RETURNED_KW)
-    if (kw_in[0] and kw_out[0]):
-      rrdtool.update(RRDPWR, '%s:%f:%f' % (str(time), 
-        float(kw_in[1])*1000.0), float(kw_out[1])*1000.0)))
-      kw_cost = (float(kw_in[1]) - float(kw_out[1])) * self.kwh_price[t]
-      rrdtool.update(RRDPWRCOST, '%s:%f' % (str(time), kw_cost))
-    else:
-      logging.warning("Could not obtain kWh")
-
     logging.info("r %s %s %s %s" % (kw_in[1], kw_out[1], gas[1], TARIFF[t]))
     
 class Reader:
