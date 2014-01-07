@@ -160,7 +160,8 @@ class Reader:
       msg += line
       if (line[0] == '!'):
         logging.debug("\n" + msg)
-        self.parser.parse(msg, long(time.time()))
+        t = calendar.timegm(datetime.datetime.now().utctimetuple())
+        self.parser.parse(msg, t)
         msg = ""
         started = False
 
