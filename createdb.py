@@ -7,10 +7,11 @@ import rrdtool
 import argparse
 
 # RRD database files
-RRDPWR = os.path.abspath('data/power.rrd')
-RRDGAS = os.path.abspath('data/gas.rrd')
-RRDPWRCOST = os.path.abspath('data/power-cost.rrd')
-RRDGASCOST = os.path.abspath('data/gas-cost.rrd')
+DIR        = os.path.abspath(os.path.dirname(__file__))
+RRDPWR     = DIR + '/data/power.rrd'
+RRDGAS     = DIR + '/data/gas.rrd'
+RRDPWRCOST = DIR + '/data/power-cost.rrd'
+RRDGASCOST = DIR + '/data/gas-cost.rrd'
 
 POINTS = 1000
 TOTAL   = 60 * 60 * 24 * 365 * 3 # Three yrs in seconds
