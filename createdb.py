@@ -87,10 +87,6 @@ if __name__ == "__main__":
       counter = 0
       for i in range(0, TOTAL, step):
         counter += 1
-        if (random.randint(0,3) == 1):
-          rrdtool.update(RRDGASCOST, '%d:U' % (t))
-          rrdtool.update(RRDGAS, '%d:U' % (t))
-        else:
-          rrdtool.update(RRDGASCOST, '%d:%f' % (t, 1.0))
-          rrdtool.update(RRDGAS, '%d:%d' % (t, counter))
+        rrdtool.update(RRDGASCOST, '%d:%f' % (t, 1.0))
+        rrdtool.update(RRDGAS, '%d:%d' % (t, counter))
         t += step

@@ -22,65 +22,68 @@ def gas(request, name, start=0, end=0):
   data = rrddata(RRDGAS, start, end)
   return HttpResponse(json.dumps(data))
 
-def gascost(request, start):
-  char = start[-1]
-  if (char == 'y'):
-    res = 32*3600
-    mul = int(start[-2])*24*365
-  elif (char == 'm'):
-    res = 16*3600
-    mul = int(start[-2])*24*365/12
-  elif (char == 'd'):
-    res = 4*3600
-    mul = int(start[-2])*24
-  else:
-    return HttpResponseNotFound('<h1>Page not found</h1>')
+def cost(request):
+  types = {'day':'e-1d','month':'e-1m','year':'e-1y'}
+  totals = {'day':0,'month':0,'year':0}
+  entries = []
+  row = {}
 
-  end = rrdtool.last(RRDGASCOST)
-  end = str(int(end/float(res))*res)
-  raw = rrdtool.fetch(RRDGASCOST, 'AVERAGE', '-r', str(res), '-s', str(start), '-e', end)
+  for k in types:
+    row[k] = powercost(types[k])
+    if row[k] != None:
+      totals[k] += row[k]
+    else:
+      row[k] = '-'
+  row['type'] = 'Power'
+  entries.append(row)
+  row = {}
 
-  cost = 0.0
-  N = 0
-  for i in range(len(raw[2])):
-    if (raw[2][i][0] != None):
-      cost += raw[2][i][0]
-      N += 1
-  if N != 0:
-    cost /= N
-  cost *= mul
-  return HttpResponse(json.dumps(cost))
+  for k in types:
+    row[k] = gascost(types[k])
+    if row[k] != None:
+      totals[k] += row[k]
+    else:
+      row[k] = '-'
+  row['type'] = 'Gas'
+  entries.append(row)
+  row = {}
 
-def powercost(request, start):
-  char = start[-1]
-  if (char == 'y'):
-    res = 16384*10
-    mul = int(start[-2])*360*24*365
-  elif (char == 'm'):
-    res = 8192*10
-    mul = int(start[-2])*360*24*365/12
-  elif (char == 'd'):
-    res = 1024*10
-    mul = int(start[-2])*360*24
-  else:
-    return HttpResponseNotFound('<h1>Page not found</h1>')
+  for k in types:
+    row[k] = totals[k]
+  row['type'] = 'Total'
+  entries.append(row)
 
-  end = rrdtool.last(RRDPWRCOST)
-  end = str(int(end/float(res))*res)
-  raw = rrdtool.fetch(RRDPWRCOST, 'AVERAGE', '-r', str(res), '-s', str(start), '-e', end)
-
-  cost = 0.0
-  N = 0
-  for i in range(len(raw[2])):
-    if (raw[2][i][0] != None):
-      cost += raw[2][i][0]
-      N += 1
-  if N != 0:
-    cost /= N
-  cost *= mul
-  return HttpResponse(json.dumps(cost))
+  return render(request, 'meter/index.html', {'cost_table': entries},
+          content_type="application/xhtml+xml")
 
 def realtime(request):
+  end = rrdtool.last(RRDPWR)
+  raw = rrdtool.fetch(RRDPWR, 'AVERAGE', 
+                      '-s', 'e-360s', 
+                      '-e', str(end))
+  
+  data = {'power':[], 'gas':[]}
+  for i in range(len(raw[2])):
+    if raw[2][i][0] == None:
+      data['power'].append(None)
+    else:
+      data['power'].append(round(raw[2][i][0]))
+
+  end = rrdtool.last(RRDGAS)
+  raw = rrdtool.fetch(RRDGAS, 'AVERAGE', 
+                      '-s', 'e-360s', 
+                      '-e', str(end))
+  
+  for i in range(len(raw[2])):
+    if raw[2][i][0] == None:
+      data['gas'].append(None)
+    else:
+      data['gas'].append(round(raw[2][i][0], 3))
+
+  return HttpResponse(json.dumps(data))
+  
+
+def last(request):
   power = float(rrdtool.info(RRDPWR)['ds[usage].last_ds'])
   gas = float(rrdtool.info(RRDGAS)['ds[gas].last_ds'])
   data = {'power': power, 'gas': gas}
@@ -110,3 +113,61 @@ def rrddata(name, start, end, dec=3):
       data.append((time*1000, round(raw[2][i][0], dec)))
       
   return data
+
+def gascost(start):
+  char = start[-1]
+  if (char == 'y'):
+    res = 32*3600
+    mul = int(start[-2])*24*365
+  elif (char == 'm'):
+    res = 16*3600
+    mul = int(start[-2])*24*365/12
+  elif (char == 'd'):
+    res = 4*3600
+    mul = int(start[-2])*24
+  else:
+    return None
+
+  end = rrdtool.last(RRDGASCOST)
+  end = str(int(end/float(res))*res)
+  raw = rrdtool.fetch(RRDGASCOST, 'AVERAGE', '-r', str(res), '-s', str(start), '-e', end)
+
+  cost = 0.0
+  N = 0
+  for i in range(len(raw[2])):
+    if (raw[2][i][0] != None):
+      cost += raw[2][i][0]
+      N += 1
+  if N != 0:
+    cost /= N
+  cost *= mul
+  return round(cost, 2)
+
+def powercost(start):
+  char = start[-1]
+  if (char == 'y'):
+    res = 16384*10
+    mul = int(start[-2])*360*24*365
+  elif (char == 'm'):
+    res = 8192*10
+    mul = int(start[-2])*360*24*365/12
+  elif (char == 'd'):
+    res = 1024*10
+    mul = int(start[-2])*360*24
+  else:
+    return None
+
+  end = rrdtool.last(RRDPWRCOST)
+  end = str(int(end/float(res))*res)
+  raw = rrdtool.fetch(RRDPWRCOST, 'AVERAGE', '-r', str(res), '-s', str(start), '-e', end)
+
+  cost = 0.0
+  N = 0
+  for i in range(len(raw[2])):
+    if (raw[2][i][0] != None):
+      cost += raw[2][i][0]
+      N += 1
+  if N != 0:
+    cost /= N
+  cost *= mul
+  return round(cost, 2)

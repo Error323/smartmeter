@@ -1,0 +1,47 @@
+/* ------------------
+ styling for the tables 
+   ------------------   */
+
+
+body
+{
+	line-height: 1.6em;
+}
+
+#cost
+{
+	font-family: "Lucida Sans Unicode", "Lucida Grande", Sans-Serif;
+	font-size: 12px;
+	background: #fff;
+	margin: 20px auto;
+	width: 500px;
+	border-collapse: collapse;
+	text-align: left;
+}
+
+#cost th
+{
+	font-size: 14px;
+	font-weight: normal;
+	color: #039;
+	padding: 10px 8px;
+	/*border-bottom: 2px solid #6678b1;*/
+}
+
+#cost td
+{
+	color: #669;
+	padding: 9px 8px 0px 8px;
+}
+
+#cost tbody tr:hover td
+{
+	color: #009;
+}
+
+#container
+{
+  width: 600px;
+  height: 300px;
+  margin: 0 auto;
+}
