@@ -59,26 +59,30 @@ def cost(request):
 def realtime(request):
   end = rrdtool.last(RRDPWR)
   raw = rrdtool.fetch(RRDPWR, 'AVERAGE', 
-                      '-s', 'e-360s', 
+                      '-s', 'e-2h', 
                       '-e', str(end))
   
   data = {'power':[], 'gas':[]}
+  time = raw[0][0]
   for i in range(len(raw[2])):
+    time += raw[0][2]
     if raw[2][i][0] == None:
-      data['power'].append(None)
+      data['power'].append((time*1000, None))
     else:
-      data['power'].append(round(raw[2][i][0]))
+      data['power'].append((time*1000, round(raw[2][i][0])))
 
   end = rrdtool.last(RRDGAS)
   raw = rrdtool.fetch(RRDGAS, 'AVERAGE', 
-                      '-s', 'e-360s', 
+                      '-s', 'e-2h', 
                       '-e', str(end))
   
+  time = raw[0][0]
   for i in range(len(raw[2])):
+    time += raw[0][2]
     if raw[2][i][0] == None:
-      data['gas'].append(None)
+      data['gas'].append((time*1000, None))
     else:
-      data['gas'].append(round(raw[2][i][0], 3))
+      data['gas'].append((time*1000, round(raw[2][i][0], 3)))
 
   return HttpResponse(json.dumps(data))
   
