@@ -25,19 +25,6 @@ $(function () {
       }],
       yAxis: [{ // Primary yAxis
         title: {
-          text: 'Power',
-          style: {
-            color: '#4572A7'
-          }
-        },
-        labels: {
-          format: '{value} W',
-          style: {
-            color: '#4572A7'
-          }
-        }
-      }, { // Secondary yAxis
-        title: {
           text: 'Gas',
           style: {
             color: '#89A54E'
@@ -47,6 +34,19 @@ $(function () {
           format: '{value} m\u00B3',
           style: {
             color: '#89A54E'
+          }
+        }
+      }, { // Secondary yAxis
+        title: {
+          text: 'Power',
+          style: {
+            color: '#4572A7'
+          }
+        },
+        labels: {
+          format: '{value} W',
+          style: {
+            color: '#4572A7'
           }
         },
         opposite: true

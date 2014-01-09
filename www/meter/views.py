@@ -143,8 +143,9 @@ def gascost(start):
     if (raw[2][i][0] != None):
       cost += raw[2][i][0]
       N += 1
-  if N != 0:
-    cost /= N
+  if N == 0:
+    return None
+  cost /= N
   cost *= mul
   return round(cost, 2)
 
@@ -152,13 +153,13 @@ def powercost(start):
   char = start[-1]
   if (char == 'y'):
     res = 16384*10
-    mul = int(start[-2])*360*24*365
+    mul = int(start[-2])*24*365
   elif (char == 'm'):
     res = 8192*10
-    mul = int(start[-2])*360*24*365/12
+    mul = int(start[-2])*24*365/12
   elif (char == 'd'):
     res = 1024*10
-    mul = int(start[-2])*360*24
+    mul = int(start[-2])*24
   else:
     return None
 
@@ -172,7 +173,8 @@ def powercost(start):
     if (raw[2][i][0] != None):
       cost += raw[2][i][0]
       N += 1
-  if N != 0:
-    cost /= N
+  if N == 0:
+    return None
+  cost /= N
   cost *= mul
   return round(cost, 2)
