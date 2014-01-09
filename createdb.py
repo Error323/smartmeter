@@ -77,16 +77,14 @@ if __name__ == "__main__":
       t = start
       step = 300
       for i in range(0, TOTAL, step):
-        rrdtool.update(RRDPWR, '%d:%f:%f' % (t, random.random()*i, i))
-        rrdtool.update(RRDPWRCOST, '%d:%f' % (t, random.random()*i))
+        rrdtool.update(RRDPWR, '%d:%f:%f' % (t, random.random(), i))
+        rrdtool.update(RRDPWRCOST, '%d:%f' % (t, random.random()))
         t += step
 
     if (cmd_args.gas):
       step = 3600
       t = start - (start % step) + step
-      counter = 0
       for i in range(0, TOTAL, step):
-        counter += 1
-        rrdtool.update(RRDGASCOST, '%d:%f' % (t, 1.0))
-        rrdtool.update(RRDGAS, '%d:%d' % (t, counter))
+        rrdtool.update(RRDGASCOST, '%d:%f' % (t, random.random()*5))
+        rrdtool.update(RRDGAS, '%d:%d' % (t, random.random()*5))
         t += step

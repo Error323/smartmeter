@@ -12,30 +12,18 @@ $(function () {
   $.getJSON('realtime', function(data) {
     $('#container').highcharts({
       title: {
-        text: 'Realtime Usage'
+        text: 'Usage'
       },
       subtitle: {
         text: 'Landys+Gir E350 smartmeter - RPi powered'
       },
       xAxis: [{
         title: {
-        text: 'Time'
-        }
+          text: null
+        },
+        type: 'datetime'
       }],
       yAxis: [{ // Primary yAxis
-        title: {
-          text: 'Gas',
-          style: {
-            color: '#89A54E'
-          }
-        },
-        labels: {
-          format: '{value} m\u00B3',
-          style: {
-            color: '#89A54E'
-          }
-        }
-      }, { // Secondary yAxis
         title: {
           text: 'Power',
           style: {
@@ -47,6 +35,19 @@ $(function () {
           style: {
             color: '#4572A7'
           }
+        }
+      }, { // Secondary yAxis
+        title: {
+          text: 'Gas',
+          style: {
+            color: '#89A54E'
+          }
+        },
+        labels: {
+          format: '{value} m\u00B3',
+          style: {
+            color: '#89A54E'
+          }
         },
         opposite: true
       }],
@@ -56,27 +57,38 @@ $(function () {
       legend: {
         layout: 'vertical',
         align: 'left',
-        x: 120,
+        x: 80,
         verticalAlign: 'top',
-        y: 100,
+        y: 50,
         floating: true,
         backgroundColor: '#FFFFFF'
       },
+      plotOptions: {
+          spline: {
+              lineWidth: 3,
+              marker: {
+                  enabled: false
+              }
+          }
+      },
       series: [{
+        type: 'column',
+        name: 'Gas',
+        color: '#89A54E',
+        step: true,
+        data: data.gas,
+        pointWidth: 12,
+        tooltip: {
+          valueSuffix: ' m\u00B3'
+        }
+      }, {
+        type: 'spline',
         name: 'Power',
         yAxis: 1,
         color: '#4572A7',
         data: data.power,
         tooltip: {
           valueSuffix: ' W'
-        }
-      }, {
-        name: 'Gas',
-        color: '#89A54E',
-        step: true,
-        data: data.gas,
-        tooltip: {
-          valueSuffix: ' m\u00B3'
         }
       }]
     });

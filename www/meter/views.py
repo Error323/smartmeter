@@ -59,7 +59,8 @@ def cost(request):
 def realtime(request):
   end = rrdtool.last(RRDPWR)
   raw = rrdtool.fetch(RRDPWR, 'AVERAGE', 
-                      '-s', 'e-2h', 
+                      '-r', '1800',
+                      '-s', 'e-1d', 
                       '-e', str(end))
   
   data = {'power':[], 'gas':[]}
@@ -73,7 +74,7 @@ def realtime(request):
 
   end = rrdtool.last(RRDGAS)
   raw = rrdtool.fetch(RRDGAS, 'AVERAGE', 
-                      '-s', 'e-2h', 
+                      '-s', 'e-1d', 
                       '-e', str(end))
   
   time = raw[0][0]
