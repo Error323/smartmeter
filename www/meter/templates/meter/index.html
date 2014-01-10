@@ -1,9 +1,9 @@
+{% load staticfiles %}
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>Smartmeter Overview - RPi</title>
-{% load staticfiles %}
 <link rel="stylesheet" href="{% static "meter/style.css" %}"/>
 <script src="http://code.jquery.com/jquery-1.9.1.js"/>
 <script src="http://code.highcharts.com/highcharts.js"/>
@@ -24,36 +24,35 @@ $(function () {
         type: 'datetime'
       }],
       yAxis: [{ // Primary yAxis
+        min: 0,
         title: {
-          text: 'Gas',
+          text: 'Gas in m\u00B3',
           style: {
             color: '#89A54E'
           }
         },
         labels: {
-          format: '{value} m\u00B3',
+          format: '{value}',
           style: {
             color: '#89A54E'
           }
         }
       }, { // Secondary yAxis
+        min: 0,
         title: {
-          text: 'Power',
+          text: 'Power in Watt',
           style: {
             color: '#4572A7'
           }
         },
         labels: {
-          format: '{value} W',
+          format: '{value}',
           style: {
             color: '#4572A7'
           }
         },
         opposite: true
       }],
-      tooltip: {
-        shared: true
-      },
       legend: {
         layout: 'vertical',
         align: 'left',
@@ -66,6 +65,11 @@ $(function () {
       plotOptions: {
           spline: {
               lineWidth: 3,
+              states: {
+                  hover: {
+                      lineWidth: 3
+                  }
+              },
               marker: {
                   enabled: false
               }
@@ -111,9 +115,9 @@ $(function () {
         {% for entry in cost_table %}
           <tr>
             <td>{{ entry.type }}</td>
-            <td>{{ entry.day }}</td>
-            <td>{{ entry.month }}</td>
-            <td>{{ entry.year }}</td>
+            <td>&#8364; {{ entry.day }}</td>
+            <td>&#8364; {{ entry.month }}</td>
+            <td>&#8364; {{ entry.year }}</td>
           </tr>
         {% endfor %}
         </tbody>

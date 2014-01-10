@@ -2,6 +2,7 @@ import sys
 import os
 from django.http import HttpResponse
 from django.shortcuts import render
+from django.views.decorators.cache import never_cache
 
 DIR = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(DIR + '/../../') # add root path
@@ -22,6 +23,7 @@ def gas(request, name, start=0, end=0):
   data = rrddata(RRDGAS, start, end)
   return HttpResponse(json.dumps(data))
 
+@never_cache
 def cost(request):
   types = {'day':'e-1d','month':'e-1m','year':'e-1y'}
   totals = {'day':0,'month':0,'year':0}
@@ -57,13 +59,16 @@ def cost(request):
           content_type="application/xhtml+xml")
 
 def realtime(request):
+  data = {'power':[], 'gas':[]}
+
+  res = 900
   end = rrdtool.last(RRDPWR)
+  end = int(end/float(res))*res
   raw = rrdtool.fetch(RRDPWR, 'AVERAGE', 
-                      '-r', '1800',
+                      '-r', str(res),
                       '-s', 'e-1d', 
                       '-e', str(end))
   
-  data = {'power':[], 'gas':[]}
   time = raw[0][0]
   for i in range(len(raw[2])):
     time += raw[0][2]
